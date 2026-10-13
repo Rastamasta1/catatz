@@ -20,6 +20,7 @@ export default defineConfig({
       include: [
         "src/lib/utils.ts",
         "src/lib/transaction-auto-fill.ts",
+        "src/lib/rekap-period.ts",
         ".ecc/hooks/core.mjs",
       ],
       thresholds: {
