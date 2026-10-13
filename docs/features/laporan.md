@@ -24,6 +24,7 @@ Fitur laporan/rekap menampilkan ringkasan pemasukan, pengeluaran, detail bulanan
 - Detail page: `src/app/(dashboard)/reports/detail/page.tsx`
 - Detail loading: `src/app/(dashboard)/reports/detail/loading.tsx`
 - Detail client component: `src/app/(dashboard)/reports/detail/_components/rekap-detail-client.tsx`
+- Detail breakdown: `src/app/(dashboard)/reports/detail/_components/rekap-detail-breakdown.tsx`
 - Proporsi saldo chart: `src/app/(dashboard)/reports/detail/_components/proporsi-saldo-chart.tsx`
 - Chart components (`RekapBarChart`, `RekapPieChart`, `RekapDonutChart`): `src/app/(dashboard)/reports/_components/rekap-charts.tsx`
 - Detail bulanan (legacy, dipertahankan): `src/app/(dashboard)/reports/_components/rekap-monthly-detail-section.tsx`
@@ -143,6 +144,15 @@ Export data:
     - Donut chart Recharts dengan persentase dan nominal terformat.
     - Sisa saldo dihitung dari: `total_income + (akumulasiAktif ? saldoAwal : 0) - total_expense`.
     - Jika defisit (`sisaSaldo < 0`), chart merender 100% slice pengeluaran disertai badge dan banner peringatan defisit berwarna `semantic-down`.
+  - Kartu Rincian Breakdown Transaksi (`RekapDetailBreakdown`):
+    - Tab segmented aksesibel "Kategori | Judul" (`TabsList rounded-full`).
+    - Tab Kategori menampilkan dua bagian: "Pengeluaran per Kategori" (`detail.kategori.expense`) dan "Pemasukan per Kategori" (`detail.kategori.income`).
+    - Tab Judul menampilkan dua bagian (D10): "Pengeluaran per Judul" (`detail.judul.expense`) dan "Pemasukan per Judul" (`detail.judul.income`).
+    - Tiap baris menyajikan: ikon plate (`rounded-full`), label teks (`truncate`), total nominal (`font-mono`, semantic color hanya pada teks tanpa background button), persentase (`font-mono`), jumlah transaksi, dan batang proporsi `Progress`.
+    - Interaksi drill-down: menekan baris membuka/menutup daftar transaksi (`aria-expanded`), dengan aturan satu baris terbuka per bagian ("single expanded row per section").
+    - Daftar transaksi menampilkan judul/catatan, badge kategori/tipe, tanggal, waktu, nama rekening, catatan (`break-words`), dan nominal bertanda (`+`/`-`, `font-mono`).
+    - Data transaksi diambil langsung dari payload `getRekapDetailByRange`, tanpa memicu kueri database baru.
+    - Struktur responsif dan anti-overflow pada mobile viewport (`truncate`, `break-words`, `min-w-0`).
 - Komponen rekap legacy (`rekap-summary-cards`, `rekap-monthly-detail-section`, `rekap-kategori-section`, `rekap-bar-section`, `rekap-charts`, `rekap-budget-section`) tidak dihapus dan tidak diedit untuk menjamin backward compatibility.
 - Export PDF memakai dynamic import `src/lib/pdf-generator.ts`.
 - Export XLSX/CSV memakai dynamic import `src/lib/spreadsheet-generator.ts`.

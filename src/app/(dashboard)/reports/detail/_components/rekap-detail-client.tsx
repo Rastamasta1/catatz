@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useSystemPreferences } from "@/providers/system-preference-provider";
 import { ProporsiSaldoChart } from "./proporsi-saldo-chart";
+import { RekapDetailBreakdown } from "./rekap-detail-breakdown";
 
 export type RekapDetailClientProps = {
   detail: RekapDetailRange;
@@ -290,6 +291,9 @@ export function RekapDetailClient({
           akumulasiAktif={settings.akumulasi_saldo}
         />
       </div>
+
+      {/* Rincian Breakdown Transaksi per Kategori & Judul (Fase 9 / D10) */}
+      <RekapDetailBreakdown detail={detail} />
     </div>
   );
 }

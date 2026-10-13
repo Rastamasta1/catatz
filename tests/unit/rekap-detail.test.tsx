@@ -1,8 +1,9 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import { rekapDetailQuerySchema } from "@/validations/rekap-validation";
 import { ProporsiSaldoChart } from "@/app/(dashboard)/reports/detail/_components/proporsi-saldo-chart";
 import { RekapDetailClient } from "@/app/(dashboard)/reports/detail/_components/rekap-detail-client";
+import { RekapDetailBreakdown } from "@/app/(dashboard)/reports/detail/_components/rekap-detail-breakdown";
 import type { RekapDetailRange } from "@/actions/rekap-action";
 
 const mockDetailBase: RekapDetailRange = {
@@ -313,5 +314,283 @@ describe("RekapDetailClient", () => {
     expect(screen.getByText("Saldo Akhir")).toBeInTheDocument();
     expect(screen.getByText("Rp 12.500.000")).toBeInTheDocument();
     expect(screen.getAllByText("Rp 18.500.000").length).toBeGreaterThan(0);
+  });
+});
+
+describe("RekapDetailBreakdown", () => {
+  afterEach(() => {
+    cleanup();
+  });
+
+  const mockDetailWithBreakdown: RekapDetailRange = {
+    ...mockDetailBase,
+    kategori: {
+      expense: [
+        {
+          id: "kat-exp-1",
+          tipe: "expense",
+          label: "Makanan & Minuman",
+          icon: "🍔",
+          color: "#cf202f",
+          total: 2500000,
+          persentase: 62.5,
+          count: 5,
+          transaksi: [
+            {
+              id: "tx-1",
+              tipe: "expense",
+              judul: "Makan Siang Resto",
+              nominal: 150000,
+              tanggal: "2026-06-05",
+              waktu: "12:30",
+              catatan: "Bersama rekan kerja",
+              kategori: {
+                id: "kat-exp-1",
+                nama: "Makanan & Minuman",
+                ikon: "🍔",
+                warna: "#cf202f",
+              },
+              rekening: {
+                id: "rek-1",
+                nama: "BCA Utama",
+                jenis: "bank",
+                logo: null,
+                warna: "#0052ff",
+              },
+            },
+          ],
+        },
+        {
+          id: "kat-exp-2",
+          tipe: "expense",
+          label: "Transportasi",
+          icon: "🚗",
+          color: "#cf202f",
+          total: 1500000,
+          persentase: 37.5,
+          count: 2,
+          transaksi: [
+            {
+              id: "tx-2",
+              tipe: "expense",
+              judul: "Isi Bensin Mobil",
+              nominal: 300000,
+              tanggal: "2026-06-10",
+              waktu: "08:15",
+              catatan: null,
+              kategori: {
+                id: "kat-exp-2",
+                nama: "Transportasi",
+                ikon: "🚗",
+                warna: "#cf202f",
+              },
+              rekening: {
+                id: "rek-1",
+                nama: "BCA Utama",
+                jenis: "bank",
+                logo: null,
+                warna: "#0052ff",
+              },
+            },
+          ],
+        },
+      ],
+      income: [
+        {
+          id: "kat-inc-1",
+          tipe: "income",
+          label: "Gaji & Upah",
+          icon: "💼",
+          color: "#05b169",
+          total: 10000000,
+          persentase: 100,
+          count: 1,
+          transaksi: [
+            {
+              id: "tx-3",
+              tipe: "income",
+              judul: "Gaji Bulanan",
+              nominal: 10000000,
+              tanggal: "2026-06-25",
+              waktu: null,
+              catatan: "Transfer kantor",
+              kategori: {
+                id: "kat-inc-1",
+                nama: "Gaji & Upah",
+                ikon: "💼",
+                warna: "#05b169",
+              },
+              rekening: {
+                id: "rek-1",
+                nama: "BCA Utama",
+                jenis: "bank",
+                logo: null,
+                warna: "#0052ff",
+              },
+            },
+          ],
+        },
+      ],
+    },
+    judul: {
+      expense: [
+        {
+          id: "jud-exp-1",
+          tipe: "expense",
+          label: "Makan Siang Resto",
+          icon: "",
+          color: null,
+          total: 150000,
+          persentase: 100,
+          count: 1,
+          transaksi: [
+            {
+              id: "tx-1",
+              tipe: "expense",
+              judul: "Makan Siang Resto",
+              nominal: 150000,
+              tanggal: "2026-06-05",
+              waktu: "12:30",
+              catatan: "Bersama rekan kerja",
+              kategori: {
+                id: "kat-exp-1",
+                nama: "Makanan & Minuman",
+                ikon: "🍔",
+                warna: "#cf202f",
+              },
+              rekening: {
+                id: "rek-1",
+                nama: "BCA Utama",
+                jenis: "bank",
+                logo: null,
+                warna: "#0052ff",
+              },
+            },
+          ],
+        },
+      ],
+      income: [
+        {
+          id: "jud-inc-1",
+          tipe: "income",
+          label: "Gaji Bulanan",
+          icon: "",
+          color: null,
+          total: 10000000,
+          persentase: 100,
+          count: 1,
+          transaksi: [
+            {
+              id: "tx-3",
+              tipe: "income",
+              judul: "Gaji Bulanan",
+              nominal: 10000000,
+              tanggal: "2026-06-25",
+              waktu: null,
+              catatan: "Transfer kantor",
+              kategori: {
+                id: "kat-inc-1",
+                nama: "Gaji & Upah",
+                ikon: "💼",
+                warna: "#05b169",
+              },
+              rekening: {
+                id: "rek-1",
+                nama: "BCA Utama",
+                jenis: "bank",
+                logo: null,
+                warna: "#0052ff",
+              },
+            },
+          ],
+        },
+      ],
+    },
+  };
+
+  it("renders segmented tabs Kategori and Judul, defaulting to Kategori", () => {
+    render(<RekapDetailBreakdown detail={mockDetailWithBreakdown} />);
+
+    expect(screen.getByRole("tab", { name: "Kategori" })).toHaveAttribute("data-state", "active");
+    expect(screen.getByRole("tab", { name: "Judul" })).toHaveAttribute("data-state", "inactive");
+    expect(screen.getByText("Pengeluaran per Kategori")).toBeInTheDocument();
+    expect(screen.getByText("Pemasukan per Kategori")).toBeInTheDocument();
+  });
+
+  it("renders category items with labels, icons, counts, and nominals", () => {
+    render(<RekapDetailBreakdown detail={mockDetailWithBreakdown} />);
+
+    expect(screen.getByText("Makanan & Minuman")).toBeInTheDocument();
+    expect(screen.getByText("Transportasi")).toBeInTheDocument();
+    expect(screen.getByText("Gaji & Upah")).toBeInTheDocument();
+
+    expect(screen.getByText("5 transaksi")).toBeInTheDocument();
+    expect(screen.getByText("2 transaksi")).toBeInTheDocument();
+    expect(screen.getByText("62.5%")).toBeInTheDocument();
+    expect(screen.getByText("37.5%")).toBeInTheDocument();
+  });
+
+  it("expands transaction list when category row is clicked with aria-expanded", () => {
+    render(<RekapDetailBreakdown detail={mockDetailWithBreakdown} />);
+
+    const foodRowBtn = screen.getByRole("button", { name: /Makanan & Minuman/i });
+    expect(foodRowBtn).toHaveAttribute("aria-expanded", "false");
+
+    // Transaksi detail belum terlihat
+    expect(screen.queryByText(/Bersama rekan kerja/i)).not.toBeInTheDocument();
+
+    // Klik untuk membuka
+    fireEvent.click(foodRowBtn);
+    expect(foodRowBtn).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByText(/Bersama rekan kerja/i)).toBeInTheDocument();
+    expect(screen.getByText(/BCA Utama/i)).toBeInTheDocument();
+
+    // Klik lagi untuk menutup
+    fireEvent.click(foodRowBtn);
+    expect(foodRowBtn).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByText(/Bersama rekan kerja/i)).not.toBeInTheDocument();
+  });
+
+  it("enforces single expanded row per section when another item is clicked", () => {
+    render(<RekapDetailBreakdown detail={mockDetailWithBreakdown} />);
+
+    const foodBtn = screen.getByRole("button", { name: /Makanan & Minuman/i });
+    const transportBtn = screen.getByRole("button", { name: /Transportasi/i });
+
+    // Buka item pertama (Makanan)
+    fireEvent.click(foodBtn);
+    expect(foodBtn).toHaveAttribute("aria-expanded", "true");
+    expect(transportBtn).toHaveAttribute("aria-expanded", "false");
+    expect(screen.getByText(/Bersama rekan kerja/i)).toBeInTheDocument();
+
+    // Buka item kedua (Transportasi) -> item pertama harus otomatis tertutup
+    fireEvent.click(transportBtn);
+    expect(foodBtn).toHaveAttribute("aria-expanded", "false");
+    expect(transportBtn).toHaveAttribute("aria-expanded", "true");
+    expect(screen.queryByText(/Bersama rekan kerja/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/Isi Bensin Mobil/i)).toBeInTheDocument();
+  });
+
+  it("switches to Judul tab and displays pengeluaran DAN pemasukan per judul (D10)", () => {
+    render(<RekapDetailBreakdown detail={mockDetailWithBreakdown} />);
+
+    const judulTab = screen.getByRole("tab", { name: "Judul" });
+    fireEvent.mouseDown(judulTab, { button: 0 });
+    fireEvent.click(judulTab);
+
+    expect(judulTab).toHaveAttribute("data-state", "active");
+    expect(screen.getByText("Pengeluaran per Judul")).toBeInTheDocument();
+    expect(screen.getByText("Pemasukan per Judul")).toBeInTheDocument();
+
+    // Judul items
+    expect(screen.getByRole("button", { name: /Makan Siang Resto/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Gaji Bulanan/i })).toBeInTheDocument();
+  });
+
+  it("displays empty state message when a section has no data", () => {
+    render(<RekapDetailBreakdown detail={mockDetailBase} />);
+
+    expect(screen.getByText("Belum ada data pengeluaran per kategori.")).toBeInTheDocument();
+    expect(screen.getByText("Belum ada data pemasukan per kategori.")).toBeInTheDocument();
   });
 });
