@@ -20,6 +20,8 @@ Fitur laporan/rekap menampilkan ringkasan pemasukan, pengeluaran, detail bulanan
 - Loading: `src/app/(dashboard)/reports/loading.tsx`
 - Client page: `src/app/(dashboard)/reports/_components/rekap-page-client.tsx`
 - Realtime tab: `src/app/(dashboard)/reports/_components/rekap-realtime-tab.tsx`
+- Bulanan tab: `src/app/(dashboard)/reports/_components/rekap-bulanan-tab.tsx`
+- Period card: `src/app/(dashboard)/reports/_components/rekap-period-card.tsx`
 - Settings dialog: `src/app/(dashboard)/reports/_components/rekap-settings-dialog.tsx`
 - Detail page: `src/app/(dashboard)/reports/detail/page.tsx`
 - Detail loading: `src/app/(dashboard)/reports/detail/loading.tsx`
@@ -153,6 +155,21 @@ Export data:
     - Daftar transaksi menampilkan judul/catatan, badge kategori/tipe, tanggal, waktu, nama rekening, catatan (`break-words`), dan nominal bertanda (`+`/`-`, `font-mono`).
     - Data transaksi diambil langsung dari payload `getRekapDetailByRange`, tanpa memicu kueri database baru.
     - Struktur responsif dan anti-overflow pada mobile viewport (`truncate`, `break-words`, `min-w-0`).
+- **Tab Bulanan (`RekapBulananTab`) & Kartu Periode (`RekapPeriodCard`)**:
+  - `RekapBulananTab` memuat batch 12 siklus pertama secara dinamis berdasarkan cut-off setting pengguna (`listCycles({ cutoffDay, referenceDate: today, count: 12 })`).
+  - Mengambil agregasi finansial secara batch via `getRekapRingkasanPeriodeList(cycles)` dan `getSaldoPeriodeList(cycles)` (bila mode `akumulasi_saldo` aktif).
+  - Menampilkan skeleton loading (grid kartu 6 item) selama inisialisasi data.
+  - Menampilkan tombol pill `rounded-full` "Muat lebih banyak" untuk memuat batch 12 siklus mundur berikutnya secara inkremental tanpa reload penuh halaman.
+  - Menampilkan `EmptyState` jika tidak ada siklus atau data transaksi.
+  - Otomatis melakukan refetch ketika pengaturan cut-off atau akumulasi saldo diperbarui di modal pengaturan.
+  - Kartu Periode (`RekapPeriodCard`):
+    - Seluruh bodi kartu dibungkus sebagai `Link` aksesibel menuju halaman detail (`/reports/detail?dari=YYYY-MM-DD&sampai=YYYY-MM-DD&jenis=bulanan[&id=uuid]`) dengan safe tap target (min 44px) dan efek hover halus (`hover:border-hairline-strong hover:bg-surface-soft/60`).
+    - Header kartu menampilkan label rentang tanggal terformat, badge status "Berjalan" (pill `rounded-full bg-primary/10 text-primary`) untuk siklus aktif saat ini, dan ikon navigasi `ChevronRight`.
+    - Dukungan tombol opsional ubah periode (`onEdit`) dengan `e.preventDefault()` / `e.stopPropagation()` agar tidak memicu navigasi kartu.
+    - Mode akumulasi saldo nonaktif: Pengeluaran (`text-semantic-down`), Pemasukan (`text-semantic-up`), Selisih utama (`signed`), dan Arus Kas Hutang Piutang (formula D8: `(hutang_baru + cicilan_piutang) - (piutang_baru + cicilan_hutang)`).
+    - Mode akumulasi saldo aktif: Saldo Awal, Pengeluaran, Pemasukan, Selisih, Hutang Piutang, dan Saldo Akhir.
+    - Baris Koreksi Saldo (`signed font-mono`) hanya ditampilkan jika terdapat aktivitas koreksi saldo (`koreksi.count > 0` atau `koreksi.net !== 0`).
+    - Seluruh nominal keuangan berformat `font-mono` dengan aturan warna semantik strictly text-only sesuai `DESIGN.md`.
 - Komponen rekap legacy (`rekap-summary-cards`, `rekap-monthly-detail-section`, `rekap-kategori-section`, `rekap-bar-section`, `rekap-charts`, `rekap-budget-section`) tidak dihapus dan tidak diedit untuk menjamin backward compatibility.
 - Export PDF memakai dynamic import `src/lib/pdf-generator.ts`.
 - Export XLSX/CSV memakai dynamic import `src/lib/spreadsheet-generator.ts`.
@@ -160,5 +177,5 @@ Export data:
 ## TODO / Improvement
 
 - UI untuk membuat/mengubah budget belum terlihat, walaupun action `upsertBudget` dan table `budget` sudah ada.
-- Integrasi kartu ringkasan dan list siklus pada Tab Bulanan (Fase 9+).
+- Tab Custom (`rekap-custom-tab.tsx`) untuk pengelolaan periode kustom pengguna (Fase 11+).
 

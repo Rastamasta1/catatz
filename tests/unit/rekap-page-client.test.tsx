@@ -65,6 +65,11 @@ vi.mock("@/actions/rekap-action", () => ({
       items: [],
     },
   }),
+  getRekapRingkasanPeriodeList: vi.fn().mockResolvedValue([]),
+}));
+
+vi.mock("@/actions/rekap-saldo-action", () => ({
+  getSaldoPeriodeList: vi.fn().mockResolvedValue({ success: true, data: [] }),
 }));
 
 describe("RekapPageClient & RekapSettingsDialog", () => {

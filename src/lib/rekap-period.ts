@@ -403,6 +403,11 @@ export function getCycleForDate(
 export const getCycleContaining = getCycleForDate;
 
 /**
+ * Alias untuk getCycleList: mengambil daftar siklus berurutan mundur
+ */
+export const listCycles = getCycleList;
+
+/**
  * (c) Daftar siklus berurutan dari terbaru mundur sampai tanggal paling awal / sejumlah N
  */
 export function getCycleList(options: GetCycleListOptions): RekapCycleRange[] {
