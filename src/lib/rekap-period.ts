@@ -398,6 +398,11 @@ export function getCycleForDate(
 }
 
 /**
+ * Alias untuk getCycleForDate: mengambil siklus yang memuat tanggal tertentu
+ */
+export const getCycleContaining = getCycleForDate;
+
+/**
  * (c) Daftar siklus berurutan dari terbaru mundur sampai tanggal paling awal / sejumlah N
  */
 export function getCycleList(options: GetCycleListOptions): RekapCycleRange[] {

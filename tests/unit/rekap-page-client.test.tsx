@@ -2,7 +2,10 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import { afterEach, describe, expect, it, vi } from "vitest";
 import RekapPageClient from "@/app/(dashboard)/reports/_components/rekap-page-client";
 import { RekapSettingsDialog } from "@/app/(dashboard)/reports/_components/rekap-settings-dialog";
+import { RekapRealtimeTab } from "@/app/(dashboard)/reports/_components/rekap-realtime-tab";
+import { RekapDonutChart } from "@/app/(dashboard)/reports/_components/rekap-charts";
 import * as rekapPeriodActions from "@/actions/rekap-period-action";
+import * as rekapActions from "@/actions/rekap-action";
 import type { RekapSettings } from "@/types/rekap";
 
 const mockReplace = vi.fn();
@@ -23,6 +26,45 @@ vi.mock("next/navigation", () => ({
 
 vi.mock("@/actions/rekap-period-action", () => ({
   updateRekapSettings: vi.fn(),
+}));
+
+vi.mock("@/actions/rekap-action", () => ({
+  getRekapDetailByRange: vi.fn().mockResolvedValue({
+    startDate: "2026-06-01",
+    endDate: "2026-06-30",
+    daysInPeriod: 30,
+    daysInMonth: 30,
+    total_income: 0,
+    total_expense: 0,
+    net: 0,
+    rata_income_harian: 0,
+    rata_expense_harian: 0,
+    kategori: {
+      income: [],
+      expense: [],
+    },
+    judul: {
+      income: [],
+      expense: [],
+    },
+    koreksi: {
+      total_tambah: 0,
+      total_kurang: 0,
+      net: 0,
+      count: 0,
+      items: [],
+    },
+    hutang_piutang: {
+      piutang_baru: 0,
+      hutang_baru: 0,
+      cicilan_piutang: 0,
+      cicilan_hutang: 0,
+      piutang_aktif: 0,
+      hutang_aktif: 0,
+      count: 0,
+      items: [],
+    },
+  }),
 }));
 
 describe("RekapPageClient & RekapSettingsDialog", () => {
@@ -50,7 +92,7 @@ describe("RekapPageClient & RekapSettingsDialog", () => {
     expect(screen.getByRole("tab", { name: "Bulanan" })).toHaveAttribute("data-state", "inactive");
     expect(screen.getByRole("tab", { name: "Custom" })).toHaveAttribute("data-state", "inactive");
 
-    expect(screen.getByText("Tab Realtime")).toBeInTheDocument();
+    expect(screen.getByText("Siklus Berjalan")).toBeInTheDocument();
   });
 
   it("navigates tabs and replaces URL with scroll: false", () => {
@@ -170,5 +212,83 @@ describe("RekapPageClient & RekapSettingsDialog", () => {
       expect(onSettingsSaved).toHaveBeenLastCalledWith(initialSettings);
       expect(onOpenChange).not.toHaveBeenCalledWith(false);
     });
+  });
+
+  it("renders RekapRealtimeTab with categories, proportion bars, and donut chart", async () => {
+    vi.mocked(rekapActions.getRekapDetailByRange).mockResolvedValueOnce({
+      startDate: "2026-06-01",
+      endDate: "2026-06-30",
+      daysInPeriod: 30,
+      daysInMonth: 30,
+      total_income: 1000000,
+      total_expense: 500000,
+      net: 500000,
+      rata_income_harian: 33333,
+      rata_expense_harian: 16667,
+      kategori: {
+        income: [],
+        expense: [
+          {
+            id: "kat-1",
+            tipe: "expense",
+            label: "Makanan & Minuman",
+            icon: "🍔",
+            color: "#0052ff",
+            total: 350000,
+            count: 5,
+            persentase: 70,
+            transaksi: [],
+          },
+          {
+            id: "kat-2",
+            tipe: "expense",
+            label: "Transportasi",
+            icon: "🚗",
+            color: "#05b169",
+            total: 150000,
+            count: 2,
+            persentase: 30,
+            transaksi: [],
+          },
+        ],
+      },
+      judul: { income: [], expense: [] },
+      koreksi: { total_tambah: 0, total_kurang: 0, net: 0, count: 0, items: [] },
+      hutang_piutang: {
+        piutang_baru: 0,
+        hutang_baru: 0,
+        cicilan_piutang: 0,
+        cicilan_hutang: 0,
+        piutang_aktif: 0,
+        hutang_aktif: 0,
+        count: 0,
+        items: [],
+      },
+    });
+
+    render(<RekapRealtimeTab settings={{ cutoff_day: 1, akumulasi_saldo: false }} />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Makanan & Minuman")).toBeInTheDocument();
+      expect(screen.getByText("Transportasi")).toBeInTheDocument();
+      expect(screen.getByText("70%")).toBeInTheDocument();
+      expect(screen.getByText("30%")).toBeInTheDocument();
+      expect(screen.getByText("Rincian Kategori (2)")).toBeInTheDocument();
+    });
+  });
+
+  it("renders RekapDonutChart with center total and labels", () => {
+    render(
+      <RekapDonutChart
+        data={[
+          { id: "1", label: "Makan", total: 100000, color: "#0052ff" },
+          { id: "2", label: "Bensin", total: 50000, color: "#05b169" },
+        ]}
+        totalExpense={150000}
+      />,
+    );
+
+    expect(screen.getByText("Total Pengeluaran")).toBeInTheDocument();
+    expect(screen.getByText("Rp 150.000")).toBeInTheDocument();
   });
 });

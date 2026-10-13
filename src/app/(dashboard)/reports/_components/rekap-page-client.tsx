@@ -2,12 +2,13 @@
 
 import { useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Clock, CalendarDays, CalendarRange, SlidersHorizontal } from "lucide-react";
+import { CalendarDays, CalendarRange, SlidersHorizontal } from "lucide-react";
 import { PageHeader, EmptyState } from "@/components/common";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { RekapSettingsDialog } from "./rekap-settings-dialog";
+import { RekapRealtimeTab } from "./rekap-realtime-tab";
 import type { RekapSettings } from "@/types/rekap";
 import { DEFAULT_REKAP_SETTINGS } from "@/validations/rekap-validation";
 import type {
@@ -83,15 +84,7 @@ export default function RekapPageClient({
 
         {/* Tab Realtime */}
         <TabsContent value="realtime" className="mt-0">
-          <Card className="rounded-card border border-hairline bg-card">
-            <CardContent className="p-6">
-              <EmptyState
-                icon={Clock}
-                title="Tab Realtime"
-                description="Ringkasan dan analitik pengeluaran serta pemasukan siklus berjalan akan tampil di sini."
-              />
-            </CardContent>
-          </Card>
+          <RekapRealtimeTab settings={settings} />
         </TabsContent>
 
         {/* Tab Bulanan */}

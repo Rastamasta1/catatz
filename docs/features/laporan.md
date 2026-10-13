@@ -18,8 +18,9 @@ Fitur laporan/rekap menampilkan ringkasan pemasukan, pengeluaran, detail bulanan
 - Rekap page: `src/app/(dashboard)/reports/page.tsx`
 - Loading: `src/app/(dashboard)/reports/loading.tsx`
 - Client page: `src/app/(dashboard)/reports/_components/rekap-page-client.tsx`
+- Realtime tab: `src/app/(dashboard)/reports/_components/rekap-realtime-tab.tsx`
 - Settings dialog: `src/app/(dashboard)/reports/_components/rekap-settings-dialog.tsx`
-- Chart (legacy, dipertahankan): `src/app/(dashboard)/reports/_components/rekap-charts.tsx`
+- Chart components (`RekapBarChart`, `RekapPieChart`, `RekapDonutChart`): `src/app/(dashboard)/reports/_components/rekap-charts.tsx`
 - Detail bulanan (legacy, dipertahankan): `src/app/(dashboard)/reports/_components/rekap-monthly-detail-section.tsx`
 - Summary cards (legacy, dipertahankan): `src/app/(dashboard)/reports/_components/rekap-summary-cards.tsx`
 - Category breakdown (legacy, dipertahankan): `src/app/(dashboard)/reports/_components/rekap-kategori-section.tsx`
@@ -41,6 +42,7 @@ Fitur laporan/rekap menampilkan ringkasan pemasukan, pengeluaran, detail bulanan
 Rekap initial data:
 
 - `getRekapSettings()` (pengaturan cut-off & akumulasi saldo)
+- `getRekapDetailByRange(startDate, endDate)` (agregasi pengeluaran kategori realtime per siklus berjalan)
 - `getRekapBulanan(tahun)`
 - `getRekapDetailBulanan(bulan, tahun)`
 - `getBudgetWithUsage(bulan, tahun)`
@@ -110,12 +112,20 @@ Export data:
   - Dropdown `Select` untuk tanggal cut-off siklus 1–31 dengan pratinjau live rentang siklus berjalan (menggunakan helper `rekap-period.ts`).
   - Toggle `Switch` untuk "Saldo Akumulasi" dengan deskripsi informatif.
   - Penyimpanan perubahan via Server Action `updateRekapSettings` dengan state optimistik, rollback bila gagal, notifikasi Sonner `toast`, dan `router.refresh()`.
-- Komponen rekap legacy (`rekap-summary-cards`, `rekap-monthly-detail-section`, `rekap-kategori-section`, `rekap-bar-section`, `rekap-charts`, `rekap-budget-section`) tidak dihapus dan tidak diedit untuk menjamin backward compatibility, sementara tiap tab menampilkan placeholder `EmptyState` pada fase ini.
+- **Tab Realtime (`RekapRealtimeTab`)**:
+  - Menentukan siklus berjalan dinamis menggunakan `getCycleContaining(settings.cutoff_day, getTodayInJakarta())` (D6).
+  - Menampilkan kartu header siklus berjalan dengan label periode terformat dan total pengeluaran siklus (`font-mono`).
+  - Mengambil data pengeluaran via `getRekapDetailByRange(cycle.startDate, cycle.endDate).kategori.expense`.
+  - Merender Donut Chart Recharts (`RekapDonutChart`, lazy-loaded) dengan total nominal pengeluaran di tengah lingkaran dan warna slice kategori.
+  - Merender daftar kategori pengeluaran: ikon kategori, nama kategori, persentase (`font-mono`), nominal (`font-mono`), dan batang proporsi progress bar yang diwarnai sesuai warna kategori.
+  - Otomatis melakukan re-fetch data saat window kembali fokus (`focus`), tab kembali aktif (`visibilitychange`), atau perangkat kembali online (`online`) (D5).
+  - Menampilkan `EmptyState` bila belum ada transaksi pengeluaran pada siklus berjalan.
+- Komponen rekap legacy (`rekap-summary-cards`, `rekap-monthly-detail-section`, `rekap-kategori-section`, `rekap-bar-section`, `rekap-charts`, `rekap-budget-section`) tidak dihapus dan tidak diedit untuk menjamin backward compatibility.
 - Export PDF memakai dynamic import `src/lib/pdf-generator.ts`.
 - Export XLSX/CSV memakai dynamic import `src/lib/spreadsheet-generator.ts`.
 
 ## TODO / Improvement
 
 - UI untuk membuat/mengubah budget belum terlihat, walaupun action `upsertBudget` dan table `budget` sudah ada.
-- Integrasi kartu ringkasan dan list siklus pada Tab Bulanan (Fase 7+).
+- Integrasi kartu ringkasan dan list siklus pada Tab Bulanan (Fase 8+).
 
