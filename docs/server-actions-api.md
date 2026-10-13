@@ -419,6 +419,22 @@ Catatan:
 - Nilai `updated_at` (dan `created_at` saat create) dikelola dari application layer menggunakan ISO timestamp.
 - Error ketiadaan tabel di database (sebelum migrasi `014-rekap-periode.sql` dijalankan) ditangkap dan dikembalikan sebagai pesan ramah, bukan *unhandled throw*.
 
+## Rekap Balance Actions
+
+Lokasi: `src/actions/rekap-saldo-action.ts`
+
+Pure calculation engine: `src/lib/rekap-balance.ts`
+
+Tabel yang diakses: `rekening`, `transaksi`, `hutang`, `hutang_cicilan`
+
+| Action | Tujuan | Input | Output | Revalidate |
+|---|---|---|---|---|
+| `getSaldoPeriodeList(periods)` | Menghitung saldo awal dan saldo akhir historis per periode menggunakan metode ledger hitung mundur (Keputusan D7). | `P extends RekapSaldoPeriodInput[]` | `ActionResult<(P & PeriodSaldoResult)[]>` | - |
+
+Catatan:
+- Query database dioptimalkan hanya mengambil transaksi, hutang, dan cicilan bertanggal `> (min(startDate) - 1 hari)`.
+- Rekonsiliasi saldo akhir untuk tanggal hari ini dijamin identik dengan total `saldo_saat_ini` rekening yang disertakan (`exclude_total = false`).
+
 ## Preference Actions
 
 Lokasi: `src/actions/preference-action.ts`
