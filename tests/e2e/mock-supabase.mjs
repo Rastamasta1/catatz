@@ -140,6 +140,16 @@ function getTableRows(tableName) {
     transaksi: [transaction],
     hutang: [debt],
     user_sessions: [],
+    rekap_settings: [
+      {
+        id: "00000000-0000-4000-8000-000000000050",
+        user_id: userId,
+        cutoff_day: 1,
+        akumulasi_saldo: false,
+        created_at: now,
+        updated_at: now,
+      },
+    ],
   };
 
   return rows[tableName] ?? [];

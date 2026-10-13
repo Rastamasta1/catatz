@@ -18,9 +18,19 @@ Fitur laporan/rekap menampilkan ringkasan pemasukan, pengeluaran, detail bulanan
 - Rekap page: `src/app/(dashboard)/reports/page.tsx`
 - Loading: `src/app/(dashboard)/reports/loading.tsx`
 - Client page: `src/app/(dashboard)/reports/_components/rekap-page-client.tsx`
-- Chart: `src/app/(dashboard)/reports/_components/rekap-charts.tsx`
-- Detail bulanan: `src/app/(dashboard)/reports/_components/rekap-monthly-detail-section.tsx`
+- Settings dialog: `src/app/(dashboard)/reports/_components/rekap-settings-dialog.tsx`
+- Chart (legacy, dipertahankan): `src/app/(dashboard)/reports/_components/rekap-charts.tsx`
+- Detail bulanan (legacy, dipertahankan): `src/app/(dashboard)/reports/_components/rekap-monthly-detail-section.tsx`
+- Summary cards (legacy, dipertahankan): `src/app/(dashboard)/reports/_components/rekap-summary-cards.tsx`
+- Category breakdown (legacy, dipertahankan): `src/app/(dashboard)/reports/_components/rekap-kategori-section.tsx`
+- Bar breakdown (legacy, dipertahankan): `src/app/(dashboard)/reports/_components/rekap-bar-section.tsx`
+- Budget section (legacy, dipertahankan): `src/app/(dashboard)/reports/_components/rekap-budget-section.tsx`
+- Rekap period engine: `src/lib/rekap-period.ts`
+- Rekap aggregation: `src/lib/rekap-aggregate.ts`
+- Rekap balance calculator: `src/lib/rekap-balance.ts`
 - Rekap actions: `src/actions/rekap-action.ts`
+- Rekap period & settings actions: `src/actions/rekap-period-action.ts`
+- Rekap balance action: `src/actions/rekap-saldo-action.ts`
 - Export actions: `src/actions/export-action.ts`
 - PDF generator: `src/lib/pdf-generator.ts`
 - Spreadsheet generator: `src/lib/spreadsheet-generator.ts`
@@ -30,6 +40,7 @@ Fitur laporan/rekap menampilkan ringkasan pemasukan, pengeluaran, detail bulanan
 
 Rekap initial data:
 
+- `getRekapSettings()` (pengaturan cut-off & akumulasi saldo)
 - `getRekapBulanan(tahun)`
 - `getRekapDetailBulanan(bulan, tahun)`
 - `getBudgetWithUsage(bulan, tahun)`
@@ -41,6 +52,8 @@ Export data:
 
 ## Tabel Database Terkait
 
+- `rekap_settings`
+- `rekap_periode_custom`
 - `transaksi`
 - `kategori`
 - `rekening`
@@ -51,6 +64,13 @@ Export data:
 
 ## Server Action Terkait
 
+- `getRekapSettings`
+- `updateRekapSettings`
+- `listCustomPeriods`
+- `createCustomPeriod`
+- `updateCustomPeriod`
+- `deleteCustomPeriod`
+- `getSaldoPeriodeList`
 - `getRekapBulanan`
 - `getRekapDetailBulanan`
 - `getRekapDetailByRange`
@@ -82,17 +102,20 @@ Export data:
 
 ## UI Behavior
 
-- Chart memakai Recharts dan di-lazy load untuk mengurangi bundle awal.
-- Pilihan bulan berada di panel `Detail Rekap` melalui tombol bulan sebelumnya/berikutnya dan dropdown bulan.
-- Summary card menampilkan pemasukan/pengeluaran bulan aktif dan total tahunan.
-- Panel detail bulanan menampilkan rincian finansial dan hanya menampilkan baris total `Koreksi Saldo` atau `Hutang Piutang` jika bulan tersebut memiliki aktivitas terkait.
-- Switch pada panel rincian mengubah breakdown dari kategori ke judul.
-- Item kategori atau judul dapat dibuka untuk melihat daftar detail transaksi dengan pola visual seperti list transaksi.
-- Budget section hanya tampil jika ada data budget untuk bulan aktif.
+- Shell baru rekap (`RekapPageClient`) menampilkan `PageHeader` dengan judul "Rekap Keuangan" dan tombol pengaturan (tap target 44px, `size-11`, `rounded-full`) dengan `aria-label="Pengaturan Rekap"` di pojok kanan atas.
+- Navigasi tab utama: "Realtime", "Bulanan", dan "Custom".
+- Tab aktif disinkronkan ke URL query parameter `?tab=` via `router.replace(..., { scroll: false })` (default: `realtime`) agar navigasi kembali dari halaman detail tetap berada pada tab yang sama.
+- Dialog pengaturan rekap (`RekapSettingsDialog`):
+  - Aman safe-area pada viewport mobile (`rounded-card`, scrollable container).
+  - Dropdown `Select` untuk tanggal cut-off siklus 1–31 dengan pratinjau live rentang siklus berjalan (menggunakan helper `rekap-period.ts`).
+  - Toggle `Switch` untuk "Saldo Akumulasi" dengan deskripsi informatif.
+  - Penyimpanan perubahan via Server Action `updateRekapSettings` dengan state optimistik, rollback bila gagal, notifikasi Sonner `toast`, dan `router.refresh()`.
+- Komponen rekap legacy (`rekap-summary-cards`, `rekap-monthly-detail-section`, `rekap-kategori-section`, `rekap-bar-section`, `rekap-charts`, `rekap-budget-section`) tidak dihapus dan tidak diedit untuk menjamin backward compatibility, sementara tiap tab menampilkan placeholder `EmptyState` pada fase ini.
 - Export PDF memakai dynamic import `src/lib/pdf-generator.ts`.
 - Export XLSX/CSV memakai dynamic import `src/lib/spreadsheet-generator.ts`.
 
 ## TODO / Improvement
 
 - UI untuk membuat/mengubah budget belum terlihat, walaupun action `upsertBudget` dan table `budget` sudah ada.
-- Pertimbangkan filter periode di halaman `/reports` jika kebutuhan analisis lebih luas.
+- Integrasi kartu ringkasan dan list siklus pada Tab Bulanan (Fase 7+).
+

@@ -1,110 +1,132 @@
 "use client";
 
 import { useState } from "react";
-import { toast } from "sonner";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { Clock, CalendarDays, CalendarRange, SlidersHorizontal } from "lucide-react";
+import { PageHeader, EmptyState } from "@/components/common";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { RekapSettingsDialog } from "./rekap-settings-dialog";
+import type { RekapSettings } from "@/types/rekap";
+import { DEFAULT_REKAP_SETTINGS } from "@/validations/rekap-validation";
 import type {
   BudgetWithUsage,
   RekapDetailBulanan,
   RekapBulanan,
 } from "@/actions/rekap-action";
-import {
-  getBudgetWithUsage,
-  getRekapDetailBulanan,
-} from "@/actions/rekap-action";
-import { RekapBarSection } from "./rekap-bar-section";
-import { RekapBudgetSection } from "./rekap-budget-section";
-import { RekapMonthlyDetailSection } from "./rekap-monthly-detail-section";
-import { RekapSummaryCards } from "./rekap-summary-cards";
-import { PageHeader } from "@/components/common";
 
-type Props = {
-  initialBulanan: RekapBulanan[];
-  initialDetail: RekapDetailBulanan;
-  initialBudget: BudgetWithUsage[];
-  currentBulan: number;
-  currentTahun: number;
+export type RekapPageClientProps = {
+  initialSettings?: RekapSettings;
+  // Props lama dipertahankan untuk backward compatibility (tidak dirender di fase ini)
+  initialBulanan?: RekapBulanan[];
+  initialDetail?: RekapDetailBulanan;
+  initialBudget?: BudgetWithUsage[];
+  currentBulan?: number;
+  currentTahun?: number;
 };
 
+type TabValue = "realtime" | "bulanan" | "custom";
+
 export default function RekapPageClient({
-  initialBulanan,
-  initialDetail,
-  initialBudget,
-  currentBulan,
-  currentTahun,
-}: Props) {
-  const [selectedBulan, setSelectedBulan] = useState(currentBulan);
-  const [isLoadingMonth, setIsLoadingMonth] = useState(false);
-  const [detailByMonth, setDetailByMonth] = useState<
-    Record<number, RekapDetailBulanan>
-  >(() => ({
-    [currentBulan]: initialDetail,
-  }));
-  const [budgetByMonth, setBudgetByMonth] = useState<
-    Record<number, BudgetWithUsage[]>
-  >(() => ({
-    [currentBulan]: initialBudget,
-  }));
+  initialSettings = DEFAULT_REKAP_SETTINGS,
+}: RekapPageClientProps) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
 
-  const totalIncome = initialBulanan.reduce((s, d) => s + d.total_income, 0);
-  const totalExpense = initialBulanan.reduce((s, d) => s + d.total_expense, 0);
-  const selectedDetail = detailByMonth[selectedBulan] ?? initialDetail;
-  const selectedBudget = budgetByMonth[selectedBulan] ?? [];
-  const selectedMonth = initialBulanan.find((d) => d.bulan === selectedBulan);
+  const [settings, setSettings] = useState<RekapSettings>(initialSettings);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
-  async function handleSelectMonth(bulan: number) {
-    if (bulan === selectedBulan || isLoadingMonth) return;
+  // Tab aktif disinkronkan dengan URL query `?tab=` (default: realtime)
+  const tabParam = searchParams.get("tab")?.toLowerCase();
+  const activeTab: TabValue =
+    tabParam === "bulanan" || tabParam === "custom" ? tabParam : "realtime";
 
-    const previousBulan = selectedBulan;
-    setSelectedBulan(bulan);
-
-    if (detailByMonth[bulan]) return;
-
-    setIsLoadingMonth(true);
-    try {
-      const [detail, budget] = await Promise.all([
-        getRekapDetailBulanan(bulan, currentTahun),
-        getBudgetWithUsage(bulan, currentTahun),
-      ]);
-
-      setDetailByMonth((prev) => ({ ...prev, [bulan]: detail }));
-      setBudgetByMonth((prev) => ({ ...prev, [bulan]: budget }));
-    } catch {
-      setSelectedBulan(previousBulan);
-      toast.error("Gagal memuat rincian rekap");
-    } finally {
-      setIsLoadingMonth(false);
-    }
-  }
+  const handleTabChange = (nextTab: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("tab", nextTab);
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+  };
 
   return (
-    <div className="w-full max-w-5xl mx-auto space-y-6">
-      {/* Header */}
-      <PageHeader title="Rekap Keuangan" subtitle={`Analitik ${currentTahun}`} />
-
-      <RekapSummaryCards
-        currentBulan={selectedBulan}
-        currentTahun={currentTahun}
-        currentMonth={selectedMonth}
-        totalIncome={totalIncome}
-        totalExpense={totalExpense}
+    <div className="mx-auto w-full max-w-5xl space-y-6">
+      {/* Header dengan tombol pengaturan 44px di pojok kanan atas */}
+      <PageHeader
+        title="Rekap Keuangan"
+        subtitle="Analisis keuangan, ringkasan per siklus, dan laporan periode"
+        action={
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            onClick={() => setIsSettingsOpen(true)}
+            aria-label="Pengaturan Rekap"
+            className="size-11 min-h-11 min-w-11 rounded-full border-hairline hover:bg-surface-strong"
+          >
+            <SlidersHorizontal className="size-5 text-foreground" />
+          </Button>
+        }
       />
 
-      <RekapBarSection
-        data={initialBulanan}
-        selectedBulan={selectedBulan}
-        isLoading={isLoadingMonth}
-      />
+      {/* Tabs Realtime | Bulanan | Custom */}
+      <Tabs
+        value={activeTab}
+        onValueChange={handleTabChange}
+        className="w-full space-y-6"
+      >
+        <TabsList className="grid w-full grid-cols-3 sm:w-auto sm:inline-grid">
+          <TabsTrigger value="realtime">Realtime</TabsTrigger>
+          <TabsTrigger value="bulanan">Bulanan</TabsTrigger>
+          <TabsTrigger value="custom">Custom</TabsTrigger>
+        </TabsList>
 
-      <RekapMonthlyDetailSection
-        detail={selectedDetail}
-        months={initialBulanan}
-        onSelectMonth={handleSelectMonth}
-        isLoading={isLoadingMonth}
-      />
+        {/* Tab Realtime */}
+        <TabsContent value="realtime" className="mt-0">
+          <Card className="rounded-card border border-hairline bg-card">
+            <CardContent className="p-6">
+              <EmptyState
+                icon={Clock}
+                title="Tab Realtime"
+                description="Ringkasan dan analitik pengeluaran serta pemasukan siklus berjalan akan tampil di sini."
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-      <RekapBudgetSection
-        budgets={selectedBudget}
-        currentBulan={selectedBulan}
+        {/* Tab Bulanan */}
+        <TabsContent value="bulanan" className="mt-0">
+          <Card className="rounded-card border border-hairline bg-card">
+            <CardContent className="p-6">
+              <EmptyState
+                icon={CalendarDays}
+                title="Tab Bulanan"
+                description="Daftar rekap keuangan per siklus bulanan akan tampil di sini."
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Tab Custom */}
+        <TabsContent value="custom" className="mt-0">
+          <Card className="rounded-card border border-hairline bg-card">
+            <CardContent className="p-6">
+              <EmptyState
+                icon={CalendarRange}
+                title="Tab Custom"
+                description="Rekap keuangan rentang periode kustom akan tampil di sini."
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+
+      {/* Modal Dialog Pengaturan Rekap */}
+      <RekapSettingsDialog
+        open={isSettingsOpen}
+        onOpenChange={setIsSettingsOpen}
+        settings={settings}
+        onSettingsSaved={setSettings}
       />
     </div>
   );

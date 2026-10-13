@@ -1,34 +1,22 @@
 import type { Metadata } from 'next';
-import {
-  getBudgetWithUsage,
-  getRekapBulanan,
-  getRekapDetailBulanan,
-} from '@/actions/rekap-action';
+import { Suspense } from 'react';
+import { getRekapSettings } from '@/actions/rekap-period-action';
+import { DEFAULT_REKAP_SETTINGS } from '@/validations/rekap-validation';
 import RekapPageClient from './_components/rekap-page-client';
+import RekapLoading from './loading';
 
 export const metadata: Metadata = {
-  title: 'Rekap',
-  description: 'Visualisasi dan analitik keuangan bulanan Anda.',
+  title: 'Rekap Keuangan',
+  description: 'Visualisasi dan analitik keuangan bulanan serta siklus Anda.',
 };
 
 export default async function RekapPage() {
-  const now = new Date();
-  const bulan = now.getMonth() + 1;
-  const tahun = now.getFullYear();
-
-  const [bulanan, detail, budget] = await Promise.all([
-    getRekapBulanan(tahun),
-    getRekapDetailBulanan(bulan, tahun),
-    getBudgetWithUsage(bulan, tahun),
-  ]);
+  const res = await getRekapSettings();
+  const settings = res.success && res.data ? res.data : DEFAULT_REKAP_SETTINGS;
 
   return (
-    <RekapPageClient
-      initialBulanan={bulanan}
-      initialDetail={detail}
-      initialBudget={budget}
-      currentBulan={bulan}
-      currentTahun={tahun}
-    />
+    <Suspense fallback={<RekapLoading />}>
+      <RekapPageClient initialSettings={settings} />
+    </Suspense>
   );
 }
