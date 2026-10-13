@@ -394,6 +394,29 @@ Lokasi: `src/actions/rekap-action.ts`
 
 Catatan: `upsertBudget` belum terlihat dipakai oleh UI route yang ada.
 
+## Rekap Period & Settings Actions
+
+Lokasi: `src/actions/rekap-period-action.ts`
+
+Shared type & validation: `src/types/rekap.d.ts`, `src/validations/rekap-validation.ts`
+
+Tabel yang diakses: `rekap_settings`, `rekap_periode_custom`
+
+| Action | Tujuan | Input | Output | Revalidate |
+|---|---|---|---|---|
+| `getRekapSettings()` | Mengambil pengaturan cut-off dan akumulasi saldo. Mengembalikan default jika belum ada row tanpa insert. | - | `ActionResult<RekapSettings>` | - |
+| `updateRekapSettings(values)` | Menyimpan/memperbarui pengaturan siklus rekap via upsert `user_id`. | `RekapSettingsSchema` | `ActionResult<RekapSettings>` | `/reports` |
+| `listCustomPeriods()` | Mengambil daftar periode custom milik user urut `tanggal_mulai DESC`. | - | `ActionResult<CustomPeriod[]>` | - |
+| `getCustomPeriod(id)` | Mengambil detail satu periode custom milik user. | `id: string` | `ActionResult<CustomPeriod>` | - |
+| `createCustomPeriod(values)` | Membuat periode custom baru setelah validasi rentang tanggal. | `CustomPeriodSchema` | `ActionResult<CustomPeriod>` | `/reports` |
+| `updateCustomPeriod(id, values)` | Memperbarui nama atau rentang tanggal periode custom milik user. | `id: string`, `values: CustomPeriodSchema` | `ActionResult<CustomPeriod>` | `/reports` |
+| `deleteCustomPeriod(id)` | Menghapus periode custom milik user. | `id: string` | `ActionResult<{ id: string }>` | `/reports` |
+
+Catatan:
+- Semua action memeriksa autentikasi user (`auth.getUser()`) dan menyertakan filter eksplisit `.eq('user_id', user.id)` di samping proteksi RLS database.
+- Nilai `updated_at` (dan `created_at` saat create) dikelola dari application layer menggunakan ISO timestamp.
+- Error ketiadaan tabel di database (sebelum migrasi `014-rekap-periode.sql` dijalankan) ditangkap dan dikembalikan sebagai pesan ramah, bukan *unhandled throw*.
+
 ## Preference Actions
 
 Lokasi: `src/actions/preference-action.ts`
