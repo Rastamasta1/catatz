@@ -96,8 +96,8 @@ test.describe("Rekap Keuangan E2E Flow", () => {
     await expect(page).toHaveURL(/\/reports\/detail\?dari=/);
 
     // Verifikasi elemen halaman detail
-    await expect(page.getByText("Total Pengeluaran")).toBeVisible();
-    await expect(page.getByText("Total Pemasukan")).toBeVisible();
+    await expect(page.getByText("Total Pengeluaran").first()).toBeVisible();
+    await expect(page.getByText("Total Pemasukan").first()).toBeVisible();
     await expect(page.getByText("Selisih Utama").first()).toBeVisible();
 
     // Verifikasi tab rincian kategori

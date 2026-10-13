@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { ChevronDown, ReceiptText, Tags, Type } from "lucide-react";
 import type {
   RekapBreakdownItem,
@@ -14,8 +14,22 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useSystemPreferences } from "@/providers/system-preference-provider";
+import { RekapDonutChart } from "@/app/(dashboard)/reports/_components/rekap-charts";
 
 export type BreakdownMode = "kategori" | "judul";
+
+const PALETTE = [
+  "#0052ff",
+  "#05b169",
+  "#f59e0b",
+  "#8b5cf6",
+  "#ec4899",
+  "#06b6d4",
+  "#10b981",
+  "#6366f1",
+  "#f97316",
+  "#14b8a6",
+];
 
 export type RekapDetailBreakdownProps = {
   detail: RekapDetailRange;
@@ -227,6 +241,7 @@ function BreakdownRows({
 
 export function RekapDetailBreakdown({ detail }: RekapDetailBreakdownProps) {
   const [mode, setMode] = useState<BreakdownMode>("kategori");
+  const [donutType, setDonutType] = useState<"expense" | "income">("expense");
   // Satu baris terbuka per bagian (activeExpenseId untuk pengeluaran, activeIncomeId untuk pemasukan)
   const [activeExpenseId, setActiveExpenseId] = useState<string | null>(null);
   const [activeIncomeId, setActiveIncomeId] = useState<string | null>(null);
@@ -244,6 +259,29 @@ export function RekapDetailBreakdown({ detail }: RekapDetailBreakdownProps) {
   const handleToggleIncome = (id: string) => {
     setActiveIncomeId((curr) => (curr === id ? null : id));
   };
+
+  const activeDonutItems = useMemo(() => {
+    const source =
+      mode === "kategori"
+        ? donutType === "expense"
+          ? detail.kategori.expense
+          : detail.kategori.income
+        : donutType === "expense"
+          ? detail.judul.expense
+          : detail.judul.income;
+
+    return source.map((item, idx) => ({
+      id: item.id,
+      label: item.label,
+      total: item.total,
+      color: item.color || PALETTE[idx % PALETTE.length],
+      persentase: item.persentase,
+      icon: item.icon,
+    }));
+  }, [detail, mode, donutType]);
+
+  const activeDonutTotal =
+    donutType === "expense" ? detail.total_expense : detail.total_income;
 
   return (
     <Card className="rounded-card border border-hairline bg-card">
@@ -285,46 +323,103 @@ export function RekapDetailBreakdown({ detail }: RekapDetailBreakdownProps) {
           </div>
         </CardHeader>
 
-        <CardContent className="p-6 pt-4">
-            <TabsContent value="kategori" className="m-0 space-y-6">
-              <div className="grid gap-8 lg:grid-cols-2">
-                <BreakdownRows
-                  title="Pengeluaran per Kategori"
-                  items={detail.kategori.expense}
-                  mode="kategori"
-                  activeId={activeExpenseId}
-                  onToggle={handleToggleExpense}
-                />
-                <BreakdownRows
-                  title="Pemasukan per Kategori"
-                  items={detail.kategori.income}
-                  mode="kategori"
-                  activeId={activeIncomeId}
-                  onToggle={handleToggleIncome}
-                />
+        <CardContent className="p-6 pt-4 space-y-6">
+          {/* Visual Donut Chart seperti di Realtime */}
+          <div className="rounded-input border border-hairline bg-surface-soft/50 p-5 sm:p-6">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
+              <div>
+                <h4 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                  Grafik Proporsi {mode === "kategori" ? "Kategori" : "Judul"}
+                </h4>
+                <p className="text-xs text-muted-foreground">
+                  Visualisasi pembagian {donutType === "expense" ? "pengeluaran" : "pemasukan"} periode berjalan
+                </p>
               </div>
-            </TabsContent>
 
-            <TabsContent value="judul" className="m-0 space-y-6">
-              <div className="grid gap-8 lg:grid-cols-2">
-                <BreakdownRows
-                  title="Pengeluaran per Judul"
-                  items={detail.judul.expense}
-                  mode="judul"
-                  activeId={activeExpenseId}
-                  onToggle={handleToggleExpense}
-                />
-                <BreakdownRows
-                  title="Pemasukan per Judul"
-                  items={detail.judul.income}
-                  mode="judul"
-                  activeId={activeIncomeId}
-                  onToggle={handleToggleIncome}
+              {/* Toggle Pengeluaran | Pemasukan */}
+              <div className="inline-flex rounded-full bg-surface-strong p-1">
+                <button
+                  type="button"
+                  onClick={() => setDonutType("expense")}
+                  className={cn(
+                    "rounded-full px-3 py-1 text-xs font-semibold transition-colors",
+                    donutType === "expense"
+                      ? "bg-card text-semantic-down shadow-sm"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  Pengeluaran
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDonutType("income")}
+                  className={cn(
+                    "rounded-full px-3 py-1 text-xs font-semibold transition-colors",
+                    donutType === "income"
+                      ? "bg-card text-semantic-up shadow-sm"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  Pemasukan
+                </button>
+              </div>
+            </div>
+
+            {activeDonutItems.length === 0 ? (
+              <div className="py-8 text-center text-xs text-muted-foreground">
+                Belum ada data {donutType === "expense" ? "pengeluaran" : "pemasukan"} untuk ditampilkan pada grafik.
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-2">
+                <RekapDonutChart
+                  data={activeDonutItems}
+                  totalExpense={activeDonutTotal}
+                  centerLabel={donutType === "expense" ? "Total Pengeluaran" : "Total Pemasukan"}
+                  height={240}
                 />
               </div>
-            </TabsContent>
-          </CardContent>
-        </Tabs>
+            )}
+          </div>
+
+          <TabsContent value="kategori" className="m-0 space-y-6">
+            <div className="grid gap-8 lg:grid-cols-2">
+              <BreakdownRows
+                title="Pengeluaran per Kategori"
+                items={detail.kategori.expense}
+                mode="kategori"
+                activeId={activeExpenseId}
+                onToggle={handleToggleExpense}
+              />
+              <BreakdownRows
+                title="Pemasukan per Kategori"
+                items={detail.kategori.income}
+                mode="kategori"
+                activeId={activeIncomeId}
+                onToggle={handleToggleIncome}
+              />
+            </div>
+          </TabsContent>
+
+          <TabsContent value="judul" className="m-0 space-y-6">
+            <div className="grid gap-8 lg:grid-cols-2">
+              <BreakdownRows
+                title="Pengeluaran per Judul"
+                items={detail.judul.expense}
+                mode="judul"
+                activeId={activeExpenseId}
+                onToggle={handleToggleExpense}
+              />
+              <BreakdownRows
+                title="Pemasukan per Judul"
+                items={detail.judul.income}
+                mode="judul"
+                activeId={activeIncomeId}
+                onToggle={handleToggleIncome}
+              />
+            </div>
+          </TabsContent>
+        </CardContent>
+      </Tabs>
     </Card>
   );
 }

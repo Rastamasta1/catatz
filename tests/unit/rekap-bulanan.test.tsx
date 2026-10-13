@@ -8,6 +8,7 @@ import type { RekapSettings } from "@/types/rekap";
 
 vi.mock("@/actions/rekap-action", () => ({
   getRekapRingkasanPeriodeList: vi.fn(),
+  getEarliestTransactionDate: vi.fn(),
 }));
 
 vi.mock("@/actions/rekap-saldo-action", () => ({
@@ -186,7 +187,12 @@ describe("RekapBulananTab", () => {
     akumulasi_saldo: false,
   };
 
-  it("loads 12 initial cycles and renders period cards", async () => {
+  it("loads cycles from earliest transaction date to current date without load more button", async () => {
+    vi.spyOn(rekapActions, "getEarliestTransactionDate").mockResolvedValue({
+      success: true,
+      data: "2026-04-01",
+    });
+
     vi.spyOn(rekapActions, "getRekapRingkasanPeriodeList").mockImplementation(
       async (periods) => {
         return periods.map((p) => ({
@@ -218,13 +224,19 @@ describe("RekapBulananTab", () => {
     // Menunggu render kartu selesai
     await waitFor(() => {
       const cards = screen.getAllByRole("link");
-      expect(cards.length).toBe(12);
+      expect(cards.length).toBeGreaterThan(0);
     });
 
-    expect(screen.getByRole("button", { name: /Muat lebih banyak/i })).toBeInTheDocument();
+    // Tombol muat lebih banyak TIDAK ada karena dibatasi sampai tanggal transaksi pertama
+    expect(screen.queryByRole("button", { name: /Muat lebih banyak/i })).not.toBeInTheDocument();
   });
 
   it("loads balance data via getSaldoPeriodeList when akumulasi_saldo is true", async () => {
+    vi.spyOn(rekapActions, "getEarliestTransactionDate").mockResolvedValue({
+      success: true,
+      data: "2026-04-01",
+    });
+
     vi.spyOn(rekapActions, "getRekapRingkasanPeriodeList").mockImplementation(
       async (periods) => {
         return periods.map((p) => ({
@@ -270,50 +282,24 @@ describe("RekapBulananTab", () => {
 
     await waitFor(() => {
       expect(saldoSpy).toHaveBeenCalledTimes(1);
-      expect(screen.getAllByText("Saldo Awal").length).toBe(12);
-      expect(screen.getAllByText("Saldo Akhir").length).toBe(12);
+      expect(screen.getAllByText("Saldo Awal").length).toBeGreaterThan(0);
+      expect(screen.getAllByText("Saldo Akhir").length).toBeGreaterThan(0);
     });
   });
 
-  it("loads more cycles on click", async () => {
-    vi.spyOn(rekapActions, "getRekapRingkasanPeriodeList").mockImplementation(
-      async (periods) => {
-        return periods.map((p) => ({
-          startDate: p.startDate ?? "2026-01-01",
-          endDate: p.endDate ?? "2026-01-31",
-          total_income: 1000000,
-          total_expense: 500000,
-          net: 500000,
-          net_arus_kas_hutang_piutang: 0,
-          hutang_piutang: {
-            piutang_baru: 0,
-            hutang_baru: 0,
-            cicilan_piutang: 0,
-            cicilan_hutang: 0,
-            net_arus_kas: 0,
-          },
-          koreksi: {
-            total_tambah: 0,
-            total_kurang: 0,
-            net: 0,
-            count: 0,
-          },
-        }));
-      },
-    );
+  it("renders current active cycle when there are no past transactions recorded", async () => {
+    vi.spyOn(rekapActions, "getEarliestTransactionDate").mockResolvedValue({
+      success: true,
+      data: null,
+    });
+
+    vi.spyOn(rekapActions, "getRekapRingkasanPeriodeList").mockResolvedValue([]);
 
     render(<RekapBulananTab settings={defaultSettings} />);
 
     await waitFor(() => {
-      expect(screen.getAllByRole("link").length).toBe(12);
-    });
-
-    const loadMoreBtn = screen.getByRole("button", { name: /Muat lebih banyak/i });
-    fireEvent.click(loadMoreBtn);
-
-    await waitFor(() => {
-      // 12 + 12 = 24 siklus
-      expect(screen.getAllByRole("link").length).toBe(24);
+      expect(screen.getByText("Berjalan")).toBeInTheDocument();
+      expect(screen.getByRole("link")).toBeInTheDocument();
     });
   });
 });

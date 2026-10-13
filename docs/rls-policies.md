@@ -95,16 +95,6 @@ Catatan: Policy UPDATE ditambahkan oleh `011-hutang-cicilan-balance-safety.sql` 
 | UPDATE | `recurring: update own` | `auth.uid() = user_id` | User hanya mengubah recurring transaction sendiri. |
 | DELETE | `recurring: delete own` | `auth.uid() = user_id` | User hanya menghapus recurring transaction sendiri. |
 
-## Tabel `rekap_settings`
-
-| Action | Policy Name | Rule | Description |
-|---|---|---|---|
-| SELECT | `rekap_settings: select own` | `(select auth.uid()) = user_id` | User hanya membaca pengaturan rekap sendiri. |
-| INSERT | `rekap_settings: insert own` | `WITH CHECK (select auth.uid()) = user_id` | User hanya membuat pengaturan rekap untuk dirinya sendiri. |
-| UPDATE | `rekap_settings: update own` | `USING ((select auth.uid()) = user_id) WITH CHECK ((select auth.uid()) = user_id)` | User hanya mengubah pengaturan rekap sendiri. |
-
-Catatan: Tidak ada policy DELETE karena setting rekap melekat pada profile user dan dihapus via foreign key cascade saat profil dihapus.
-
 ## Tabel `rekap_periode_custom`
 
 | Action | Policy Name | Rule | Description |
@@ -127,7 +117,7 @@ Catatan: Tidak ada policy DELETE karena setting rekap melekat pada profile user 
 
 Grant API didefinisikan di masing-masing migration table dalam `src/migrations`:
 
-- Table user-owned memberi akses sesuai kebutuhan ke role `authenticated` (termasuk `rekap_settings` untuk SELECT/INSERT/UPDATE dan `rekap_periode_custom` untuk SELECT/INSERT/UPDATE/DELETE).
+- Table user-owned memberi akses sesuai kebutuhan ke role `authenticated` (termasuk `user_preferences` untuk SELECT/INSERT/UPDATE dan `rekap_periode_custom` untuk SELECT/INSERT/UPDATE/DELETE).
 - `kategori` memberi `SELECT` kepada `anon` agar kategori system bisa dibaca.
 - Storage `avatars` memakai policy storage khusus di migration `008-avatars-storage.sql`.
 
@@ -136,7 +126,7 @@ Grant bukan pengganti RLS. Grant membuka akses API pada level table/schema, RLS 
 ## Security Notes
 
 - Function `handle_new_user` dan `update_saldo_rekening` dibuat sebagai `SECURITY DEFINER` di schema `public`. Function hutang/cicilan terbaru dari migration 011 dan trigger guard rekening dari migration 012 memakai `SECURITY INVOKER` dan fully qualified object names agar tetap mengikuti RLS user yang sedang login.
-- Tabel `rekap_settings` dan `rekap_periode_custom` dari migration `014-rekap-periode.sql` menggunakan predicate RLS `(select auth.uid()) = user_id` dengan scope role `authenticated`, tanpa trigger dan tanpa fungsi `SECURITY DEFINER`.
+- Kolom siklus `cutoff_day` dan `akumulasi_saldo` pada `user_preferences` serta tabel `rekap_periode_custom` dari migration `014-rekap-periode.sql` menggunakan predicate RLS `(select auth.uid()) = user_id` dengan scope role `authenticated`, tanpa trigger dan tanpa fungsi `SECURITY DEFINER`.
 - `avatars` bersifat public read. Jangan simpan gambar yang bersifat rahasia di bucket ini.
 - Pastikan semua perubahan table baru selalu mengaktifkan RLS sebelum diberi grant API.
 

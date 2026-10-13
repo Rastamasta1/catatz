@@ -6,44 +6,10 @@
 
 BEGIN;
 
--- 1. Tabel rekap_settings
-CREATE TABLE IF NOT EXISTS public.rekap_settings (
-  id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id           UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE UNIQUE,
-  cutoff_day        SMALLINT NOT NULL DEFAULT 1 CHECK (cutoff_day BETWEEN 1 AND 31),
-  akumulasi_saldo   BOOLEAN NOT NULL DEFAULT false,
-  created_at        TIMESTAMPTZ DEFAULT NOW(),
-  updated_at        TIMESTAMPTZ DEFAULT NOW()
-);
-
--- Index user_id pada rekap_settings
-CREATE INDEX IF NOT EXISTS idx_rekap_settings_user_id ON public.rekap_settings(user_id);
-
--- Aktifkan RLS rekap_settings
-ALTER TABLE public.rekap_settings ENABLE ROW LEVEL SECURITY;
-
--- Policies rekap_settings (tanpa DELETE policy)
-DROP POLICY IF EXISTS "rekap_settings: select own" ON public.rekap_settings;
-CREATE POLICY "rekap_settings: select own" ON public.rekap_settings
-  FOR SELECT
-  TO authenticated
-  USING ((select auth.uid()) = user_id);
-
-DROP POLICY IF EXISTS "rekap_settings: insert own" ON public.rekap_settings;
-CREATE POLICY "rekap_settings: insert own" ON public.rekap_settings
-  FOR INSERT
-  TO authenticated
-  WITH CHECK ((select auth.uid()) = user_id);
-
-DROP POLICY IF EXISTS "rekap_settings: update own" ON public.rekap_settings;
-CREATE POLICY "rekap_settings: update own" ON public.rekap_settings
-  FOR UPDATE
-  TO authenticated
-  USING ((select auth.uid()) = user_id)
-  WITH CHECK ((select auth.uid()) = user_id);
-
--- Grant API access rekap_settings ke role authenticated saja
-GRANT SELECT, INSERT, UPDATE ON public.rekap_settings TO authenticated;
+-- 1. Tambahkan kolom rekap settings ke user_preferences
+ALTER TABLE public.user_preferences
+  ADD COLUMN IF NOT EXISTS cutoff_day SMALLINT NOT NULL DEFAULT 1 CHECK (cutoff_day BETWEEN 1 AND 31),
+  ADD COLUMN IF NOT EXISTS akumulasi_saldo BOOLEAN NOT NULL DEFAULT false;
 
 
 -- 2. Tabel rekap_periode_custom

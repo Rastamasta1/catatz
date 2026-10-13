@@ -38,7 +38,7 @@ function handleDbError(error: { code?: string; message?: string } | null | undef
 }
 
 /**
- * Mengambil pengaturan siklus rekap pengguna.
+ * Mengambil pengaturan siklus rekap pengguna dari tabel user_preferences.
  * Jika belum ada data di database, kembalikan nilai default tanpa melakukan insert.
  */
 export async function getRekapSettings(): Promise<ActionResult<RekapSettings>> {
@@ -53,8 +53,8 @@ export async function getRekapSettings(): Promise<ActionResult<RekapSettings>> {
     }
 
     const { data, error } = await supabase
-      .from('rekap_settings')
-      .select('id, user_id, cutoff_day, akumulasi_saldo, created_at, updated_at')
+      .from('user_preferences')
+      .select('cutoff_day, akumulasi_saldo')
       .eq('user_id', user.id)
       .maybeSingle();
 
@@ -84,12 +84,8 @@ export async function getRekapSettings(): Promise<ActionResult<RekapSettings>> {
     return {
       success: true,
       data: {
-        id: data.id,
-        user_id: data.user_id,
-        cutoff_day: data.cutoff_day,
-        akumulasi_saldo: data.akumulasi_saldo,
-        created_at: data.created_at,
-        updated_at: data.updated_at,
+        cutoff_day: data.cutoff_day ?? DEFAULT_REKAP_SETTINGS.cutoff_day,
+        akumulasi_saldo: data.akumulasi_saldo ?? DEFAULT_REKAP_SETTINGS.akumulasi_saldo,
       },
     };
   } catch (err) {
@@ -99,7 +95,7 @@ export async function getRekapSettings(): Promise<ActionResult<RekapSettings>> {
 }
 
 /**
- * Memperbarui pengaturan siklus rekap pengguna (upsert berdasarkan user_id).
+ * Memperbarui pengaturan siklus rekap pengguna (upsert ke user_preferences berdasarkan user_id).
  */
 export async function updateRekapSettings(
   values: RekapSettingsSchema,
@@ -131,9 +127,9 @@ export async function updateRekapSettings(
     };
 
     const { data, error } = await supabase
-      .from('rekap_settings')
+      .from('user_preferences')
       .upsert(payload, { onConflict: 'user_id' })
-      .select('id, user_id, cutoff_day, akumulasi_saldo, created_at, updated_at')
+      .select('cutoff_day, akumulasi_saldo')
       .single();
 
     if (error) {
@@ -141,16 +137,13 @@ export async function updateRekapSettings(
     }
 
     revalidatePath('/reports');
+    revalidatePath('/settings');
 
     return {
       success: true,
       data: {
-        id: data.id,
-        user_id: data.user_id,
         cutoff_day: data.cutoff_day,
         akumulasi_saldo: data.akumulasi_saldo,
-        created_at: data.created_at,
-        updated_at: data.updated_at,
       },
     };
   } catch (err) {

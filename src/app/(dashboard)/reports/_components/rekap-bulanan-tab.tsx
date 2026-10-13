@@ -1,16 +1,17 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { CalendarDays, ChevronDown, Loader2 } from "lucide-react";
+import { CalendarDays } from "lucide-react";
 import { toast } from "sonner";
-import { getRekapRingkasanPeriodeList } from "@/actions/rekap-action";
+import {
+  getRekapRingkasanPeriodeList,
+  getEarliestTransactionDate,
+} from "@/actions/rekap-action";
 import { getSaldoPeriodeList } from "@/actions/rekap-saldo-action";
 import { EmptyState } from "@/components/common";
-import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  addDays,
   getCycleContaining,
   getTodayInJakarta,
   listCycles,
@@ -23,13 +24,9 @@ export type RekapBulananTabProps = {
   settings: RekapSettings;
 };
 
-const BATCH_SIZE = 12;
-
 export function RekapBulananTab({ settings }: RekapBulananTabProps) {
   const [items, setItems] = useState<RekapPeriodCardData[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [isLoadingMore, setIsLoadingMore] = useState<boolean>(false);
-  const [hasMore, setHasMore] = useState<boolean>(true);
 
   const today = useMemo(() => getTodayInJakarta(), []);
   const currentCycle = useMemo(
@@ -97,89 +94,66 @@ export function RekapBulananTab({ settings }: RekapBulananTabProps) {
     setIsLoading(true);
   }
 
-  // Muat 12 siklus pertama saat mount atau saat setting berubah
+  // Muat siklus hanya dari bulan transaksi terawal s/d bulan sekarang (siklus berjalan)
   useEffect(() => {
     let ignore = false;
 
-    const initialCycles = listCycles({
-      cutoffDay: settings.cutoff_day,
-      referenceDate: today,
-      count: BATCH_SIZE,
-    });
+    async function loadMonthlyCycles() {
+      try {
+        const earliestRes = await getEarliestTransactionDate();
+        const earliestDate =
+          earliestRes.success && earliestRes.data ? earliestRes.data : undefined;
 
-    fetchCycleData(initialCycles)
-      .then((initialData) => {
+        // Ambil siklus mundur dari siklus berjalan s/d siklus yang memuat transaksi terawal
+        const cycles = listCycles({
+          cutoffDay: settings.cutoff_day,
+          referenceDate: today,
+          count: 240, // Batas aman 20 tahun
+          earliestDate: earliestDate ?? currentCycle.startDate,
+        });
+
+        const data = await fetchCycleData(cycles);
         if (!ignore) {
-          setItems(initialData);
-          setHasMore(initialCycles.length === BATCH_SIZE);
+          setItems(data);
           setIsLoading(false);
         }
-      })
-      .catch((err) => {
+      } catch (err) {
         if (!ignore) {
           console.error("Gagal memuat rekap bulanan:", err);
           toast.error("Gagal memuat siklus bulanan");
           setItems([]);
           setIsLoading(false);
         }
-      });
+      }
+    }
+
+    loadMonthlyCycles();
 
     return () => {
       ignore = true;
     };
-  }, [fetchCycleData, settings.cutoff_day, today]);
-
-  // Muat batch 12 siklus berikutnya
-  const loadMore = useCallback(async () => {
-    if (items.length === 0 || isLoadingMore || !hasMore) return;
-
-    try {
-      setIsLoadingMore(true);
-      const lastItem = items[items.length - 1];
-      const nextRefDate = addDays(lastItem.startDate, -1);
-
-      const nextCycles = listCycles({
-        cutoffDay: settings.cutoff_day,
-        referenceDate: nextRefDate,
-        count: BATCH_SIZE,
-      });
-
-      if (nextCycles.length === 0) {
-        setHasMore(false);
-        return;
-      }
-
-      const nextData = await fetchCycleData(nextCycles);
-      setItems((prev) => [...prev, ...nextData]);
-      setHasMore(nextCycles.length === BATCH_SIZE);
-    } catch (err) {
-      console.error("Gagal memuat batch berikutnya:", err);
-      toast.error("Gagal memuat siklus berikutnya");
-    } finally {
-      setIsLoadingMore(false);
-    }
-  }, [fetchCycleData, hasMore, isLoadingMore, items, settings.cutoff_day]);
+  }, [currentCycle.startDate, fetchCycleData, settings.cutoff_day, today]);
 
   // Skeleton saat memuat awal
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 items-stretch">
           {Array.from({ length: 6 }).map((_, i) => (
             <Card
               key={i}
-              className="rounded-card border border-hairline bg-card p-5 sm:p-6"
+              className="rounded-card border border-hairline bg-card p-5 sm:p-6 h-full flex flex-col justify-between"
             >
               <div className="flex items-center justify-between border-b border-hairline pb-3">
-                <Skeleton className="h-5 w-36 rounded" />
+                <Skeleton className="h-5 w-32 rounded" />
                 <Skeleton className="size-4 rounded-full" />
               </div>
               <div className="mt-3 space-y-2.5">
                 {Array.from({ length: settings.akumulasi_saldo ? 6 : 4 }).map(
                   (_, j) => (
                     <div key={j} className="flex justify-between py-1">
+                      <Skeleton className="h-4 w-20 rounded" />
                       <Skeleton className="h-4 w-24 rounded" />
-                      <Skeleton className="h-4 w-28 rounded" />
                     </div>
                   ),
                 )}
@@ -191,7 +165,7 @@ export function RekapBulananTab({ settings }: RekapBulananTabProps) {
     );
   }
 
-  // Tampilan kosong bila tidak ada data
+  // Tampilan bila tidak ada data sama sekali
   if (items.length === 0) {
     return (
       <Card className="rounded-card border border-hairline bg-card">
@@ -208,8 +182,8 @@ export function RekapBulananTab({ settings }: RekapBulananTabProps) {
 
   return (
     <div className="space-y-6">
-      {/* Grid Kartu Siklus Bulanan */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {/* Grid Kartu Siklus Bulanan dengan Perataan Tinggi Sama (items-stretch) */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 items-stretch">
         {items.map((item) => (
           <RekapPeriodCard
             key={`${item.startDate}_${item.endDate}`}
@@ -219,27 +193,6 @@ export function RekapBulananTab({ settings }: RekapBulananTabProps) {
           />
         ))}
       </div>
-
-      {/* Tombol Muat Lebih Banyak */}
-      {hasMore && (
-        <div className="flex justify-center pt-2">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={loadMore}
-            disabled={isLoadingMore}
-            className="h-10 min-h-11 rounded-full border-hairline px-6 gap-2 text-sm font-medium hover:bg-surface-strong transition-colors"
-          >
-            {isLoadingMore ? (
-              <Loader2 className="size-4 animate-spin text-muted-foreground" />
-            ) : (
-              <ChevronDown className="size-4 text-muted-foreground" />
-            )}
-            <span>{isLoadingMore ? "Memuat siklus..." : "Muat lebih banyak"}</span>
-          </Button>
-        </div>
-      )}
     </div>
   );
 }

@@ -96,11 +96,11 @@ export function RekapPeriodCard({
   return (
     <Link
       href={href}
-      className="group block rounded-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+      className="group block h-full rounded-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
     >
-      <Card className="rounded-card border border-hairline bg-card p-5 sm:p-6 transition-all hover:bg-surface-soft/60 hover:shadow-[0_4px_12px_rgba(0,0,0,0.04)]">
+      <Card className="rounded-card border border-hairline bg-card p-5 sm:p-6 transition-all hover:bg-surface-soft/60 hover:shadow-[0_4px_12px_rgba(0,0,0,0.04)] h-full flex flex-col justify-between">
         {/* Header Kartu */}
-        <div className="flex items-start justify-between gap-3 border-b border-hairline pb-3">
+        <div className="flex items-start justify-between gap-3 border-b border-hairline pb-3 shrink-0">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
               <h3 className="truncate text-base font-semibold text-foreground group-hover:text-primary transition-colors">
@@ -144,7 +144,7 @@ export function RekapPeriodCard({
         </div>
 
         {/* Daftar Metrik Finansial */}
-        <div className="mt-3 divide-y divide-hairline">
+        <div className="mt-3 divide-y divide-hairline flex-1 flex flex-col justify-start">
           {akumulasiAktif ? (
             // Mode Akumulasi Aktif
             <>

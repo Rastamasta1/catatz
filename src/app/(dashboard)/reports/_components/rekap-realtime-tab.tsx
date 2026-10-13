@@ -2,11 +2,13 @@
 
 import { useState, useEffect, useCallback, useMemo, lazy, Suspense } from "react";
 import { toast } from "sonner";
-import { Receipt, RefreshCw } from "lucide-react";
+import { Receipt, RefreshCw, Tags, Type } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { EmptyState } from "@/components/common";
 import { getRekapDetailByRange, type RekapBreakdownItem } from "@/actions/rekap-action";
+import { getSaldoPeriodeList } from "@/actions/rekap-saldo-action";
 import { getCycleContaining, getTodayInJakarta } from "@/lib/rekap-period";
 import { useSystemPreferences } from "@/providers/system-preference-provider";
 import type { RekapSettings } from "@/types/rekap";
@@ -18,9 +20,22 @@ const RekapDonutChart = lazy(() =>
   })),
 );
 
+const PALETTE = [
+  "#0052ff",
+  "#05b169",
+  "#f4b000",
+  "#cf202f",
+  "#8b5cf6",
+  "#ec4899",
+  "#06b6d4",
+  "#f97316",
+];
+
 export type RekapRealtimeTabProps = {
   settings: RekapSettings;
 };
+
+export type RealtimeBreakdownMode = "kategori" | "judul";
 
 export function RekapRealtimeTab({ settings }: RekapRealtimeTabProps) {
   const { formatRupiah } = useSystemPreferences();
@@ -32,33 +47,63 @@ export function RekapRealtimeTab({ settings }: RekapRealtimeTabProps) {
     [settings.cutoff_day, today],
   );
 
-  const [expenseData, setExpenseData] = useState<RekapBreakdownItem[]>([]);
+  const [mode, setMode] = useState<RealtimeBreakdownMode>("kategori");
+  const [kategoriData, setKategoriData] = useState<RekapBreakdownItem[]>([]);
+  const [judulData, setJudulData] = useState<RekapBreakdownItem[]>([]);
   const [totalExpense, setTotalExpense] = useState<number>(0);
+  const [totalIncome, setTotalIncome] = useState<number>(0);
+  const [saldoAwal, setSaldoAwal] = useState<number>(0);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isRefetching, setIsRefetching] = useState<boolean>(false);
 
-  // Ambil detail rekap berdasarkan rentang siklus berjalan (menggunakan kategori.expense)
+  // Ambil detail rekap berdasarkan rentang siklus berjalan (kategori & judul) beserta saldo
   const loadData = useCallback(async () => {
     try {
-      const detail = await getRekapDetailByRange(cycle.startDate, cycle.endDate);
-      setExpenseData(detail.kategori.expense);
+      const [detail, saldoRes] = await Promise.all([
+        getRekapDetailByRange(cycle.startDate, cycle.endDate),
+        settings.akumulasi_saldo
+          ? getSaldoPeriodeList([cycle])
+          : Promise.resolve({ success: true, data: [] }),
+      ]);
+
+      setKategoriData(detail.kategori.expense);
+      setJudulData(detail.judul.expense);
       setTotalExpense(detail.total_expense);
+      setTotalIncome(detail.total_income);
+
+      if (saldoRes.success && saldoRes.data && saldoRes.data.length > 0) {
+        setSaldoAwal(saldoRes.data[0].saldo_awal ?? 0);
+      } else {
+        setSaldoAwal(0);
+      }
     } catch {
       toast.error("Gagal memuat rekap realtime");
     } finally {
       setIsLoading(false);
       setIsRefetching(false);
     }
-  }, [cycle.startDate, cycle.endDate]);
+  }, [cycle, settings.akumulasi_saldo]);
 
   // Initial fetch pada mount atau saat siklus berubah
   useEffect(() => {
     let ignore = false;
-    getRekapDetailByRange(cycle.startDate, cycle.endDate)
-      .then((detail) => {
+    Promise.all([
+      getRekapDetailByRange(cycle.startDate, cycle.endDate),
+      settings.akumulasi_saldo
+        ? getSaldoPeriodeList([cycle])
+        : Promise.resolve({ success: true, data: [] }),
+    ])
+      .then(([detail, saldoRes]) => {
         if (!ignore) {
-          setExpenseData(detail.kategori.expense);
+          setKategoriData(detail.kategori.expense);
+          setJudulData(detail.judul.expense);
           setTotalExpense(detail.total_expense);
+          setTotalIncome(detail.total_income);
+          if (saldoRes.success && saldoRes.data && saldoRes.data.length > 0) {
+            setSaldoAwal(saldoRes.data[0].saldo_awal ?? 0);
+          } else {
+            setSaldoAwal(0);
+          }
           setIsLoading(false);
         }
       })
@@ -72,7 +117,7 @@ export function RekapRealtimeTab({ settings }: RekapRealtimeTabProps) {
     return () => {
       ignore = true;
     };
-  }, [cycle.startDate, cycle.endDate]);
+  }, [cycle, settings.akumulasi_saldo]);
 
   // Refetch saat visibilitychange/focus dan event online (D5)
   useEffect(() => {
@@ -99,26 +144,34 @@ export function RekapRealtimeTab({ settings }: RekapRealtimeTabProps) {
     };
   }, [loadData]);
 
+  // Hitung sisa saldo (D9)
+  const sisaSaldo = useMemo(() => {
+    const totalDanaMasuk = totalIncome + (settings.akumulasi_saldo ? saldoAwal : 0);
+    return totalDanaMasuk - totalExpense;
+  }, [totalIncome, totalExpense, settings.akumulasi_saldo, saldoAwal]);
+
+  const activeData = mode === "kategori" ? kategoriData : judulData;
+
   // Format data untuk input Donut Chart
   const donutItems = useMemo(
     () =>
-      expenseData.map((item) => ({
+      activeData.map((item, idx) => ({
         id: item.id,
         label: item.label,
         total: item.total,
-        color: item.color,
+        color: item.color || PALETTE[idx % PALETTE.length],
         persentase: item.persentase,
         icon: item.icon,
       })),
-    [expenseData],
+    [activeData],
   );
 
   return (
     <div className="space-y-6">
-      {/* Kartu Header Periode Siklus Berjalan */}
+      {/* Kartu Header Periode Siklus Berjalan dengan Pengeluaran & Sisa Saldo */}
       <Card className="rounded-card border border-hairline bg-card">
-        <CardHeader className="p-6 pb-4">
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <CardHeader className="p-6 pb-5">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <div className="flex items-center gap-2">
                 <span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">
@@ -138,11 +191,32 @@ export function RekapRealtimeTab({ settings }: RekapRealtimeTabProps) {
                 <span className="font-mono">{cycle.endDate}</span> ({cycle.daysCount} hari inklusif)
               </CardDescription>
             </div>
-            <div className="rounded-input border border-hairline bg-surface-soft p-3 sm:text-right">
-              <p className="text-xs text-muted-foreground">Total Pengeluaran Siklus</p>
-              <p className="mt-0.5 font-mono text-lg font-bold text-semantic-down sm:text-xl">
-                {formatRupiah(totalExpense)}
-              </p>
+
+            {/* Metrik Finansial Header: Pengeluaran, Pemasukan, dan Sisa Saldo */}
+            <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
+              <div className="rounded-input border border-hairline bg-surface-soft p-3 text-left sm:text-right">
+                <p className="text-xs text-muted-foreground">Pengeluaran</p>
+                <p className="mt-0.5 font-mono text-base sm:text-lg font-bold text-semantic-down">
+                  {formatRupiah(totalExpense)}
+                </p>
+              </div>
+              <div className="rounded-input border border-hairline bg-surface-soft p-3 text-left sm:text-right">
+                <p className="text-xs text-muted-foreground">Pemasukan</p>
+                <p className="mt-0.5 font-mono text-base sm:text-lg font-bold text-semantic-up">
+                  {formatRupiah(totalIncome)}
+                </p>
+              </div>
+              <div className="rounded-input border border-hairline bg-surface-soft p-3 text-left sm:text-right">
+                <p className="text-xs text-muted-foreground">Sisa Saldo</p>
+                <p
+                  className={`mt-0.5 font-mono text-base sm:text-lg font-bold ${
+                    sisaSaldo >= 0 ? "text-semantic-up" : "text-semantic-down"
+                  }`}
+                >
+                  {sisaSaldo > 0 ? "+" : ""}
+                  {formatRupiah(sisaSaldo)}
+                </p>
+              </div>
             </div>
           </div>
         </CardHeader>
@@ -150,12 +224,12 @@ export function RekapRealtimeTab({ settings }: RekapRealtimeTabProps) {
 
       {/* Konten Tab: Loading State */}
       {isLoading ? (
-        <div className="grid gap-6 md:grid-cols-2">
-          <Card className="rounded-card border border-hairline bg-card p-6">
+        <div className="grid gap-6 md:grid-cols-2 items-stretch">
+          <Card className="rounded-card border border-hairline bg-card p-6 h-full flex flex-col justify-between">
             <Skeleton className="mb-4 h-5 w-44" />
             <Skeleton className="mx-auto h-65 w-65 rounded-full" />
           </Card>
-          <Card className="rounded-card border border-hairline bg-card p-6">
+          <Card className="rounded-card border border-hairline bg-card p-6 h-full flex flex-col justify-between">
             <Skeleton className="mb-4 h-5 w-40" />
             <div className="space-y-4">
               {Array.from({ length: 4 }).map((_, i) => (
@@ -170,7 +244,7 @@ export function RekapRealtimeTab({ settings }: RekapRealtimeTabProps) {
             </div>
           </Card>
         </div>
-      ) : expenseData.length === 0 ? (
+      ) : activeData.length === 0 ? (
         /* Empty State bila belum ada pengeluaran */
         <Card className="rounded-card border border-hairline bg-card">
           <CardContent className="p-6">
@@ -182,16 +256,40 @@ export function RekapRealtimeTab({ settings }: RekapRealtimeTabProps) {
           </CardContent>
         </Card>
       ) : (
-        /* Grid Donut Chart & Breakdown Kategori */
-        <div className="grid gap-6 md:grid-cols-2">
+        /* Grid Donut Chart & Rincian (Kategori / Judul) dengan Tinggi Rata */
+        <div className="grid gap-6 md:grid-cols-2 items-stretch">
           {/* Kolom Kiri: Donut Recharts */}
-          <Card className="rounded-card border border-hairline bg-card">
+          <Card className="rounded-card border border-hairline bg-card h-full flex flex-col justify-between">
             <CardHeader className="p-6 pb-2">
-              <CardTitle className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-                Proporsi Pengeluaran
-              </CardTitle>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <CardTitle className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                  Proporsi {mode === "kategori" ? "Kategori" : "Judul"}
+                </CardTitle>
+
+                {/* Switcher Rincian Kategori | Judul */}
+                <Tabs
+                  value={mode}
+                  onValueChange={(v) => setMode(v as RealtimeBreakdownMode)}
+                  className="w-full sm:w-auto"
+                >
+                  <TabsList className="grid grid-cols-2 rounded-full p-1 bg-surface-strong h-9 w-full sm:w-48">
+                    <TabsTrigger
+                      value="kategori"
+                      className="rounded-full text-xs font-semibold data-active:bg-card"
+                    >
+                      <Tags className="mr-1.5 size-3.5" /> Kategori
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value="judul"
+                      className="rounded-full text-xs font-semibold data-active:bg-card"
+                    >
+                      <Type className="mr-1.5 size-3.5" /> Judul
+                    </TabsTrigger>
+                  </TabsList>
+                </Tabs>
+              </div>
             </CardHeader>
-            <CardContent className="p-6 pt-0">
+            <CardContent className="p-6 pt-0 flex-1 flex flex-col justify-center">
               <Suspense
                 fallback={
                   <div className="flex h-65 items-center justify-center">
@@ -204,21 +302,26 @@ export function RekapRealtimeTab({ settings }: RekapRealtimeTabProps) {
             </CardContent>
           </Card>
 
-          {/* Kolom Kanan: Rincian Daftar Kategori */}
-          <Card className="rounded-card border border-hairline bg-card">
+          {/* Kolom Kanan: Rincian Daftar (Kategori / Judul) */}
+          <Card className="rounded-card border border-hairline bg-card h-full flex flex-col justify-between">
             <CardHeader className="p-6 pb-2">
-              <CardTitle className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-                Rincian Kategori ({expenseData.length})
-              </CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                  Rincian {mode === "kategori" ? "Kategori" : "Judul"} ({activeData.length})
+                </CardTitle>
+                <span className="font-mono text-xs text-muted-foreground">
+                  {mode === "kategori" ? "per Kategori" : "per Judul"}
+                </span>
+              </div>
             </CardHeader>
-            <CardContent className="p-6 pt-2">
+            <CardContent className="p-6 pt-2 flex-1 flex flex-col justify-start">
               <div className="space-y-4 max-h-85 overflow-y-auto pr-1">
-                {expenseData.map((item) => (
-                  <div key={item.id} className="space-y-1.5">
+                {activeData.map((item, idx) => (
+                  <div key={item.id || idx} className="space-y-1.5">
                     <div className="flex items-center justify-between gap-3 text-sm">
                       <div className="flex items-center gap-2.5 min-w-0">
                         <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-surface-strong text-sm">
-                          {item.icon}
+                          {item.icon || (mode === "kategori" ? "🏷️" : "📝")}
                         </span>
                         <span className="truncate font-medium text-foreground">
                           {item.label}
@@ -233,13 +336,14 @@ export function RekapRealtimeTab({ settings }: RekapRealtimeTabProps) {
                         </span>
                       </div>
                     </div>
-                    {/* Batang Proporsi Kategori */}
+                    {/* Batang Proporsi */}
                     <div className="h-1.5 w-full rounded-full bg-surface-strong overflow-hidden">
                       <div
                         className="h-full rounded-full transition-all duration-300"
                         style={{
                           width: `${Math.min(100, Math.max(0, item.persentase))}%`,
-                          backgroundColor: item.color || "var(--primary)",
+                          backgroundColor:
+                            item.color || PALETTE[idx % PALETTE.length],
                         }}
                       />
                     </div>

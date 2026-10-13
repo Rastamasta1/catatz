@@ -133,6 +133,8 @@ function getTableRows(tableName) {
         default_landing_page: "/transactions",
         show_decimal_places: false,
         time_format: "24h",
+        cutoff_day: 1,
+        akumulasi_saldo: false,
       },
     ],
     rekening: [account],

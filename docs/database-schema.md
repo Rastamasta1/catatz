@@ -237,6 +237,8 @@ Deskripsi: preferensi tampilan dan format data milik user.
 | `default_landing_page` | `text` | Yes | `'/transactions'` | Route awal setelah login. |
 | `show_decimal_places` | `boolean` | No | `false` | Jika true, nominal penuh tampil dengan 2 digit desimal. |
 | `time_format` | `text` | No | `'24h'` | Format waktu tampilan/input, `24h` atau `12h`. |
+| `cutoff_day` | `smallint` | No | `1` | Tanggal cut-off siklus rekap bulanan (1–31). |
+| `akumulasi_saldo` | `boolean` | No | `false` | Menentukan apakah saldo awal siklus mengakumulasi saldo berjalan sebelumnya. |
 | `created_at` | `timestamptz` | Yes | `now()` | Waktu dibuat. |
 | `updated_at` | `timestamptz` | Yes | `now()` | Waktu terakhir diubah dari application layer. |
 
@@ -244,6 +246,7 @@ Constraints/index:
 
 - Unique `user_id`.
 - Check `chk_user_preferences_time_format`: `time_format IN ('24h', '12h')`.
+- Check `chk_user_preferences_cutoff_day`: `cutoff_day BETWEEN 1 AND 31`.
 - Index `idx_user_preferences_user_id` pada `user_id`.
 
 ## Tabel `user_sessions`
@@ -272,27 +275,6 @@ Indexes:
 - `idx_user_sessions_device_id` pada `device_id`.
 - `idx_user_sessions_revoked_at` pada `revoked_at`.
 - `idx_user_sessions_last_active_at` pada `last_active_at DESC`.
-
-## Tabel `rekap_settings`
-
-Deskripsi: Pengaturan siklus rekap bulanan (tanggal cut-off) dan preferensi akumulasi saldo per pengguna.
-
-| Column | Type | Nullable | Default | Description |
-|---|---|---:|---|---|
-| `id` | `uuid` | No | `gen_random_uuid()` | Primary key. |
-| `user_id` | `uuid` | No | - | FK ke `profiles(id)` dengan `ON DELETE CASCADE`, unique per user. |
-| `cutoff_day` | `smallint` | No | `1` | Tanggal cut-off siklus bulanan (1–31). |
-| `akumulasi_saldo` | `boolean` | No | `false` | Menentukan apakah saldo awal siklus mengakumulasi saldo berjalan sebelumnya. |
-| `created_at` | `timestamptz` | Yes | `now()` | Waktu dibuat. |
-| `updated_at` | `timestamptz` | Yes | `now()` | Waktu terakhir diubah dari application layer. |
-
-Constraints/index:
-
-- Unique `user_id`.
-- Check: `cutoff_day BETWEEN 1 AND 31`.
-- Index `idx_rekap_settings_user_id` pada `user_id`.
-
-Catatan: Kolom `updated_at` dikelola oleh application layer tanpa trigger database.
 
 ## Tabel `rekap_periode_custom`
 
@@ -350,7 +332,6 @@ Policy storage:
 - `recurring_transaksi.rekening_tujuan` -> `rekening.id`.
 - `user_preferences.user_id` -> `profiles.id`.
 - `user_sessions.user_id` -> `profiles.id`.
-- `rekap_settings.user_id` -> `profiles.id`.
 - `rekap_periode_custom.user_id` -> `profiles.id`.
 
 ## Business Rule Database

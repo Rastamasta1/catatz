@@ -212,8 +212,8 @@ export function RekapCustomTab({ settings }: RekapCustomTabProps) {
           </div>
         </Card>
       ) : (
-        /* Grid Kartu Periode Kustom */
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        /* Grid Kartu Periode Kustom dengan Perataan Tinggi Sama (items-stretch) */
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 items-stretch">
           {items.map((item) => (
             <RekapPeriodCard
               key={item.id ?? `${item.startDate}_${item.endDate}`}

@@ -1,6 +1,7 @@
 'use server';
 
 import { createClient } from '@/configs/supabase/server';
+import type { ActionResult } from '@/types/general';
 import type { TipeHutang } from '@/types/hutang';
 import type { TipeTransaksi } from '@/types/transaksi';
 import { countDaysInPeriod } from '@/lib/rekap-period';
@@ -731,3 +732,41 @@ export async function upsertBudget(
   if (error) return { success: false, error: error.message };
   return { success: true };
 }
+
+/**
+ * Mengambil tanggal transaksi paling awal (earliest date) milik pengguna.
+ * Mengembalikan null jika pengguna belum memiliki transaksi sama sekali.
+ */
+export async function getEarliestTransactionDate(): Promise<ActionResult<string | null>> {
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return { success: false, error: 'Tidak terautentikasi' };
+    }
+
+    const { data, error } = await supabase
+      .from('transaksi')
+      .select('tanggal')
+      .eq('user_id', user.id)
+      .order('tanggal', { ascending: true })
+      .limit(1)
+      .maybeSingle();
+
+    if (error && error.code !== 'PGRST116') {
+      return { success: false, error: error.message };
+    }
+
+    return { success: true, data: data?.tanggal ?? null };
+  } catch (err) {
+    const message =
+      err instanceof Error
+        ? err.message
+        : 'Terjadi kesalahan saat memuat tanggal awal transaksi';
+    return { success: false, error: message };
+  }
+}
+

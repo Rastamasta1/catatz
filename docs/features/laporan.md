@@ -64,7 +64,7 @@ Export data:
 
 ## Tabel Database Terkait
 
-- `rekap_settings`
+- `user_preferences` (menyimpan `cutoff_day` dan `akumulasi_saldo`)
 - `rekap_periode_custom`
 - `transaksi`
 - `kategori`
@@ -121,15 +121,16 @@ Export data:
   - Aman safe-area pada viewport mobile (`rounded-card`, scrollable container).
   - Dropdown `Select` untuk tanggal cut-off siklus 1–31 dengan pratinjau live rentang siklus berjalan (menggunakan helper `rekap-period.ts`).
   - Toggle `Switch` untuk "Saldo Akumulasi" dengan deskripsi informatif.
-  - Penyimpanan perubahan via Server Action `updateRekapSettings` dengan state optimistik, rollback bila gagal, notifikasi Sonner `toast`, dan `router.refresh()`.
-- **Tab Realtime (`RekapRealtimeTab`)**:
+  - Penyimpanan perubahan via Server Action `updateRekapSettings` dengan state optimistik, rollback bila gagal, notifikasi Sonner `toast`, dan `router.refresh()`- **Tab Realtime (`RekapRealtimeTab`)**:
   - Menentukan siklus berjalan dinamis menggunakan `getCycleContaining(settings.cutoff_day, getTodayInJakarta())` (D6).
-  - Menampilkan kartu header siklus berjalan dengan label periode terformat dan total pengeluaran siklus (`font-mono`).
-  - Mengambil data pengeluaran via `getRekapDetailByRange(cycle.startDate, cycle.endDate).kategori.expense`.
-  - Merender Donut Chart Recharts (`RekapDonutChart`, lazy-loaded) dengan total nominal pengeluaran di tengah lingkaran dan warna slice kategori.
-  - Merender daftar kategori pengeluaran: ikon kategori, nama kategori, persentase (`font-mono`), nominal (`font-mono`), dan batang proporsi progress bar yang diwarnai sesuai warna kategori.
+  - Menampilkan kartu header siklus berjalan dengan label periode terformat dan 3 ringkasan metrik: Total Pengeluaran (`text-semantic-down font-mono`), Total Pemasukan (`text-semantic-up font-mono`), dan Sisa Saldo (`font-mono`).
+  - Menyediakan switcher segmented pill untuk rincian: "Kategori" atau "Judul".
+  - Mengambil data via `getRekapDetailByRange(cycle.startDate, cycle.endDate)`.
+  - Merender Donut Chart Recharts (`RekapDonutChart`, lazy-loaded) dengan total nominal di tengah lingkaran dan irisan warna proporsi sesuai mode aktif (Kategori atau Judul).
+  - Merender daftar rincian: ikon plate, nama, persentase (`font-mono`), nominal (`font-mono`), dan batang proporsi progress bar yang diwarnai sesuai palet tema.
+  - Kartu Donut Chart dan Kartu Rincian Daftar diratakan tingginya (`h-full items-stretch`).
   - Otomatis melakukan re-fetch data saat window kembali fokus (`focus`), tab kembali aktif (`visibilitychange`), atau perangkat kembali online (`online`) (D5).
-  - Menampilkan `EmptyState` bila belum ada transaksi pengeluaran pada siklus berjalan.
+  - Menampilkan `EmptyState` bila belum ada transaksi pada siklus berjalan.
 - **Halaman Detail Rekap (`/reports/detail`)**:
   - Validasi parameter kueri secara asinkron di Server Component (`searchParams`) menggunakan Zod schema `rekapDetailQuerySchema` (`dari`, `sampai`, `jenis: 'bulanan' | 'custom'`, `id?: uuid`), me-redirect ke `notFound()` jika parameter tidak valid atau rentang tanggal terbalik.
   - Untuk `jenis === 'custom'` dengan parameter `id`, mengambil nama periode via `getCustomPeriod(id)`. Jika periode kustom tidak ditemukan di database, memicu `notFound()`.
@@ -145,10 +146,11 @@ Export data:
     - Baris Arus Kas Hutang & Piutang (`signed font-mono`), hanya tampil jika ada mutasi hutang/piutang (`detail.hutang_piutang.count > 0`), dihitung dengan formula arus kas bersih D8: `(hutang_baru + cicilan_piutang) - (piutang_baru + cicilan_hutang)`.
     - Baris Saldo Awal dan Saldo Akhir (`font-mono`), hanya tampil jika toggle akumulasi saldo aktif (`settings.akumulasi_saldo === true`), dihitung menggunakan `getSaldoPeriodeList`.
   - Kartu Grafik Proporsi Pengeluaran vs Sisa Saldo (Definisi D9):
-    - Donut chart Recharts dengan persentase dan nominal terformat.
+    - Vertikal Bar Chart Recharts ("chart bar ke atas") dengan batang Pengeluaran (`semantic-down`) dan Sisa Saldo (`primary`).
     - Sisa saldo dihitung dari: `total_income + (akumulasiAktif ? saldoAwal : 0) - total_expense`.
-    - Jika defisit (`sisaSaldo < 0`), chart merender 100% slice pengeluaran disertai badge dan banner peringatan defisit berwarna `semantic-down`.
+    - Jika defisit (`sisaSaldo < 0`), chart menampilkan penanda defisit disertai badge dan banner peringatan defisit berwarna `semantic-down`.
   - Kartu Rincian Breakdown Transaksi (`RekapDetailBreakdown`):
+    - Visual Donut Chart proporsi (`RekapDonutChart`) di bagian atas dengan toggle pill "Pengeluaran" | "Pemasukan", menampilkan pembagian visual per kategori atau per judul secara dinamis.
     - Tab segmented aksesibel "Kategori | Judul" (`TabsList rounded-full`).
     - Tab Kategori menampilkan dua bagian: "Pengeluaran per Kategori" (`detail.kategori.expense`) dan "Pemasukan per Kategori" (`detail.kategori.income`).
     - Tab Judul menampilkan dua bagian (D10): "Pengeluaran per Judul" (`detail.judul.expense`) dan "Pemasukan per Judul" (`detail.judul.income`).
@@ -158,10 +160,10 @@ Export data:
     - Data transaksi diambil langsung dari payload `getRekapDetailByRange`, tanpa memicu kueri database baru.
     - Struktur responsif dan anti-overflow pada mobile viewport (`truncate`, `break-words`, `min-w-0`).
 - **Tab Bulanan (`RekapBulananTab`) & Kartu Periode (`RekapPeriodCard`)**:
-  - `RekapBulananTab` memuat batch 12 siklus pertama secara dinamis berdasarkan cut-off setting pengguna (`listCycles({ cutoffDay, referenceDate: today, count: 12 })`).
+  - `RekapBulananTab` memuat siklus secara dinamis dari bulan pertama kali ada transaksi (`getEarliestTransactionDate`) sampai siklus berjalan saat ini, menghindari pagination mundur tak terhingga yang memberatkan database.
   - Mengambil agregasi finansial secara batch via `getRekapRingkasanPeriodeList(cycles)` dan `getSaldoPeriodeList(cycles)` (bila mode `akumulasi_saldo` aktif).
-  - Menampilkan skeleton loading (grid kartu 6 item) selama inisialisasi data.
-  - Menampilkan tombol pill `rounded-full` "Muat lebih banyak" untuk memuat batch 12 siklus mundur berikutnya secara inkremental tanpa reload penuh halaman.
+  - Seluruh kartu periode (`RekapPeriodCard`) di tab Bulanan dan Custom memiliki tinggi seragam rata dengan kartu terpanjang (`h-full items-stretch`) dengan tetap mempertahankan susunan baris metrik data apa adanya.
+  - Menampilkan skeleton loading selama inisialisasi data.
   - Menampilkan `EmptyState` jika tidak ada siklus atau data transaksi.
   - Otomatis melakukan refetch ketika pengaturan cut-off atau akumulasi saldo diperbarui di modal pengaturan.
   - Kartu Periode (`RekapPeriodCard`):

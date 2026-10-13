@@ -116,12 +116,14 @@ export type RekapDonutItem = {
 export type RekapDonutChartProps = {
   data: RekapDonutItem[];
   totalExpense?: number;
+  centerLabel?: string;
   height?: number;
 };
 
 export function RekapDonutChart({
   data,
   totalExpense,
+  centerLabel = "Total Pengeluaran",
   height = 260,
 }: RekapDonutChartProps) {
   const { formatRupiah } = useSystemPreferences();
@@ -160,7 +162,7 @@ export function RekapDonutChart({
       </ResponsiveContainer>
       <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
         <span className="text-xs font-medium text-muted-foreground">
-          Total Pengeluaran
+          {centerLabel}
         </span>
         <span className="font-mono text-lg font-bold text-foreground sm:text-xl">
           {formatRupiah(computedTotal)}

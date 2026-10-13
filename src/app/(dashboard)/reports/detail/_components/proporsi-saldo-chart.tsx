@@ -1,7 +1,16 @@
 "use client";
 
 import { useMemo } from "react";
-import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 import { AlertTriangle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useSystemPreferences } from "@/providers/system-preference-provider";
@@ -31,7 +40,16 @@ export function ProporsiSaldoChart({
       // Jika defisit, tampil 100% pengeluaran dengan penanda defisit
       return {
         chartData: [
-          { name: "Pengeluaran", value: totalExpense > 0 ? totalExpense : 1, color: "var(--semantic-down)" },
+          {
+            name: "Pengeluaran",
+            nominal: totalExpense,
+            color: "var(--semantic-down)",
+          },
+          {
+            name: "Sisa Saldo",
+            nominal: 0,
+            color: "var(--semantic-down)",
+          },
         ],
         persenExpense: 100,
         persenSisa: 0,
@@ -43,8 +61,16 @@ export function ProporsiSaldoChart({
       const pSisa = Math.max(0, 100 - pExpense);
       return {
         chartData: [
-          { name: "Pengeluaran", value: totalExpense, color: "var(--semantic-down)" },
-          { name: "Sisa Saldo", value: sisaSaldo, color: "var(--primary)" },
+          {
+            name: "Pengeluaran",
+            nominal: totalExpense,
+            color: "var(--semantic-down)",
+          },
+          {
+            name: "Sisa Saldo",
+            nominal: sisaSaldo,
+            color: "var(--primary)",
+          },
         ],
         persenExpense: pExpense,
         persenSisa: pSisa,
@@ -54,7 +80,16 @@ export function ProporsiSaldoChart({
     if (totalExpense > 0) {
       return {
         chartData: [
-          { name: "Pengeluaran", value: totalExpense, color: "var(--semantic-down)" },
+          {
+            name: "Pengeluaran",
+            nominal: totalExpense,
+            color: "var(--semantic-down)",
+          },
+          {
+            name: "Sisa Saldo",
+            nominal: 0,
+            color: "var(--primary)",
+          },
         ],
         persenExpense: 100,
         persenSisa: 0,
@@ -64,7 +99,16 @@ export function ProporsiSaldoChart({
     // Kasus nol transaksi
     return {
       chartData: [
-        { name: "Sisa Saldo", value: 1, color: "var(--primary)" },
+        {
+          name: "Pengeluaran",
+          nominal: 0,
+          color: "var(--semantic-down)",
+        },
+        {
+          name: "Sisa Saldo",
+          nominal: 0,
+          color: "var(--primary)",
+        },
       ],
       persenExpense: 0,
       persenSisa: 100,
@@ -86,45 +130,52 @@ export function ProporsiSaldoChart({
         </div>
       </CardHeader>
       <CardContent className="p-6 pt-0 space-y-5">
-        {/* Visual Donut Chart */}
-        <div className="relative flex h-60 w-full items-center justify-center">
+        {/* Visual Bar Chart ke Atas */}
+        <div className="h-60 w-full pt-2">
           <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
-              <Pie
-                data={chartData}
-                dataKey="value"
-                nameKey="name"
-                cx="50%"
-                cy="50%"
-                innerRadius={68}
-                outerRadius={94}
-                paddingAngle={chartData.length > 1 ? 2 : 0}
-              >
-                {chartData.map((entry, index) => (
-                  <Cell key={`slice-${index}`} fill={entry.color} />
-                ))}
-              </Pie>
-              <Tooltip
-                formatter={(val) =>
-                  chartData.length === 1 && totalExpense === 0 && sisaSaldo === 0
-                    ? formatRupiah(0)
-                    : formatRupiah(Number(val))
-                }
-              />
-            </PieChart>
-          </ResponsiveContainer>
-          <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
-            <span className="text-xs font-medium text-muted-foreground">
-              {isDefisit ? "Defisit" : "Sisa Saldo"}
-            </span>
-            <span
-              className={`font-mono text-lg font-bold sm:text-xl ${
-                isDefisit ? "text-semantic-down" : "text-foreground"
-              }`}
+            <BarChart
+              data={chartData}
+              margin={{ top: 12, right: 12, left: -16, bottom: 0 }}
+              barCategoryGap="30%"
             >
-              {isDefisit ? `-${formatRupiah(Math.abs(sisaSaldo))}` : formatRupiah(sisaSaldo)}
-            </span>
-          </div>
+              <CartesianGrid
+                strokeDasharray="3 3"
+                vertical={false}
+                stroke="#dee1e6"
+                opacity={0.35}
+              />
+              <XAxis
+                dataKey="name"
+                tick={{ fontSize: 12, fill: "currentColor" }}
+                axisLine={false}
+                tickLine={false}
+              />
+              <YAxis
+                tick={{ fontSize: 10, fill: "currentColor" }}
+                axisLine={false}
+                tickLine={false}
+                tickFormatter={(val) => {
+                  const num = Number(val);
+                  if (num >= 1_000_000) return `${(num / 1_000_000).toFixed(1)}Jt`;
+                  if (num >= 1_000) return `${(num / 1_000).toFixed(0)}rb`;
+                  return String(num);
+                }}
+              />
+              <Tooltip
+                formatter={(val) => formatRupiah(Number(val))}
+                contentStyle={{
+                  borderRadius: "12px",
+                  borderColor: "var(--border-hairline, #dee1e6)",
+                  boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
+                }}
+              />
+              <Bar dataKey="nominal" radius={[8, 8, 0, 0]} maxBarSize={64}>
+                {chartData.map((entry, index) => (
+                  <Cell key={`bar-${index}`} fill={entry.color} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
         </div>
 
         {/* Legend Persentase & Nominal */}
