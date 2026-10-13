@@ -10,8 +10,8 @@ Only the latest main version of CatatZ receives security updates and bug fixes.
 
 | Version               | Supported          | Notes                                                               |
 | --------------------- | ------------------ | ------------------------------------------------------------------- |
-| `1.0.x` (main branch) | :white_check_mark: | Active production version based on Next.js 16 App Router & Supabase |
-| `< 1.0.0`             | :x:                | Experimental / unsupported versions                                 |
+| `1.1.x` (main branch) | :white_check_mark: | Active production version based on Next.js 16 App Router & Supabase |
+| `< 1.1.0`             | :x:                | Older / unsupported versions                                        |
 
 ---
 

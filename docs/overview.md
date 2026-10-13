@@ -51,11 +51,14 @@ Aplikasi saat ini berfokus pada pencatatan transaksi harian, pengelolaan rekenin
 
 ## Status Project
 
-Status: aktif dikembangkan.
+Status: **Production (Live)**.
 
-Catatan status aktual:
+Aplikasi CatatZ telah dirilis dan aktif beroperasi di tahap production. Seluruh fungsionalitas inti (Auth, Transaksi, Rekening, Kategori, Hutang/Piutang, Laporan/Rekap, Settings, PWA, dan integrasi AI) sudah berjalan live.
 
-- Fitur recurring transaction sudah memiliki table `recurring_transaksi`, type `IntervalRecurring`, dan field transaksi terkait, tetapi belum terlihat ada UI/flow aktif untuk mengelola recurring transaction.
+Catatan status aktual dan aturan production:
+
+- **Lifecycle**: Production. Setiap task dan perubahan oleh AI/developer harus memperlakukan sistem dengan standar production: zero-downtime, migration additive di `src/migrations`, backward compatible, dan integritas data saldo terjaga.
+- Fitur recurring transaction sudah memiliki table `recurring_transaksi`, type `IntervalRecurring`, dan field transaksi terkait, tetapi belum memiliki UI/flow aktif untuk mengelola recurring transaction.
 - Fitur budget memiliki table `budget`, action `upsertBudget`, dan tampilan usage di halaman rekap jika data budget tersedia. UI pembuatan/edit budget belum terlihat di route yang ada.
 - Reset password email tersedia melalui `/forgot-password` dan `/reset-password`.
 - Google OAuth tersedia untuk login/register, dan Google Link Identity tersedia dari Settings Akun Terhubung.

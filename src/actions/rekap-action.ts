@@ -1,8 +1,18 @@
 'use server';
 
 import { createClient } from '@/configs/supabase/server';
+import type { ActionResult } from '@/types/general';
 import type { TipeHutang } from '@/types/hutang';
 import type { TipeTransaksi } from '@/types/transaksi';
+import { countDaysInPeriod } from '@/lib/rekap-period';
+import { dateRangeSchema } from '@/validations/rekap-validation';
+import {
+  aggregateRekapByPeriods,
+  type RekapRingkasanPeriode,
+  type AggregateTransaksiItem,
+  type AggregateHutangItem,
+  type AggregateCicilanItem,
+} from '@/lib/rekap-aggregate';
 
 export type RekapBulanan = {
   bulan: number;
@@ -123,11 +133,10 @@ export type RekapHutangPiutang = {
   items: RekapHutangPiutangItem[];
 };
 
-export type RekapDetailBulanan = {
-  bulan: number;
-  tahun: number;
+export type RekapDetailRange = {
   startDate: string;
   endDate: string;
+  daysInPeriod: number;
   daysInMonth: number;
   total_income: number;
   total_expense: number;
@@ -138,6 +147,27 @@ export type RekapDetailBulanan = {
   judul: RekapBreakdown;
   koreksi: RekapKoreksiSaldo;
   hutang_piutang: RekapHutangPiutang;
+};
+
+export type RekapDetailBulanan = RekapDetailRange & {
+  bulan: number;
+  tahun: number;
+};
+
+export type {
+  RekapRingkasanPeriode,
+  RekapRingkasanHutangPiutang,
+  RekapRingkasanKoreksi,
+} from '@/lib/rekap-aggregate';
+
+export type RekapPeriodFilter = {
+  startDate?: string;
+  endDate?: string;
+  dari?: string;
+  sampai?: string;
+  tanggal_mulai?: string;
+  tanggal_selesai?: string;
+  [key: string]: unknown;
 };
 
 type RekapTransaksiRow = {
@@ -243,9 +273,7 @@ function buildBreakdown(
     const icon =
       mode === 'kategori'
         ? (item.kategori?.ikon ?? 'Tag')
-        : item.tipe === 'income'
-          ? 'Masuk'
-          : 'Keluar';
+        : '';
 
     if (!grouped[groupId]) {
       grouped[groupId] = {
@@ -445,12 +473,22 @@ export async function getRekapKategori(
     .sort((a, b) => b.total - a.total);
 }
 
-export async function getRekapDetailBulanan(
-  bulan: number,
-  tahun: number,
-): Promise<RekapDetailBulanan> {
+export async function getRekapDetailByRange(
+  dari: string,
+  sampai: string,
+): Promise<RekapDetailRange> {
+  const validation = dateRangeSchema.safeParse({ dari, sampai });
+  if (!validation.success) {
+    throw new Error(
+      validation.error.issues[0]?.message ?? 'Rentang tanggal tidak valid',
+    );
+  }
+
+  const { dari: startDate, sampai: endDate } = validation.data;
+  const daysInPeriod = countDaysInPeriod(startDate, endDate);
+  const effectiveDays = Math.max(1, daysInPeriod);
+
   const supabase = await createClient();
-  const { startDate, endDate, daysInMonth } = getMonthRange(bulan, tahun);
 
   const [transaksiResult, hutangResult, cicilanResult, activeHutangResult] =
     await Promise.all([
@@ -516,16 +554,15 @@ export async function getRekapDetailBulanan(
     .reduce((sum, item) => sum + item.nominal, 0);
 
   return {
-    bulan,
-    tahun,
     startDate,
     endDate,
-    daysInMonth,
+    daysInPeriod,
+    daysInMonth: daysInPeriod,
     total_income,
     total_expense,
     net: total_income - total_expense,
-    rata_income_harian: Math.round(total_income / daysInMonth),
-    rata_expense_harian: Math.round(total_expense / daysInMonth),
+    rata_income_harian: Math.round(total_income / effectiveDays),
+    rata_expense_harian: Math.round(total_expense / effectiveDays),
     kategori: buildBreakdown(transaksiUtama, 'kategori'),
     judul: buildBreakdown(transaksiUtama, 'judul'),
     koreksi: buildKoreksi(transaksiRows),
@@ -535,6 +572,96 @@ export async function getRekapDetailBulanan(
       (activeHutangResult.data as unknown as Pick<HutangRow, 'tipe' | 'sisa_tagihan'>[]) ?? [],
     ),
   };
+}
+
+export async function getRekapDetailBulanan(
+  bulan: number,
+  tahun: number,
+): Promise<RekapDetailBulanan> {
+  const { startDate, endDate, daysInMonth } = getMonthRange(bulan, tahun);
+  const detail = await getRekapDetailByRange(startDate, endDate);
+
+  return {
+    ...detail,
+    bulan,
+    tahun,
+    daysInMonth,
+  };
+}
+
+export async function getRekapRingkasanPeriodeList<
+  P extends RekapPeriodFilter,
+>(periods: P[]): Promise<(P & RekapRingkasanPeriode)[]> {
+  if (!Array.isArray(periods) || periods.length === 0) {
+    return [];
+  }
+
+  // Normalisasi dan validasi rentang periode
+  const normalized = periods.map((p) => {
+    const rawDari = String(p.startDate ?? p.dari ?? p.tanggal_mulai ?? '');
+    const rawSampai = String(p.endDate ?? p.sampai ?? p.tanggal_selesai ?? '');
+
+    const validation = dateRangeSchema.safeParse({
+      dari: rawDari,
+      sampai: rawSampai,
+    });
+    if (!validation.success) {
+      throw new Error(
+        `Periode [${rawDari} s/d ${rawSampai}] tidak valid: ${validation.error.issues[0]?.message}`,
+      );
+    }
+
+    return {
+      ...p,
+      startDate: validation.data.dari,
+      endDate: validation.data.sampai,
+    };
+  });
+
+  // Cari rentang tanggal global min(dari)..max(sampai) untuk 1 query batch
+  let minStartDate = normalized[0].startDate;
+  let maxEndDate = normalized[0].endDate;
+
+  for (const p of normalized) {
+    if (p.startDate < minStartDate) minStartDate = p.startDate;
+    if (p.endDate > maxEndDate) maxEndDate = p.endDate;
+  }
+
+  const supabase = await createClient();
+
+  const [transaksiResult, hutangResult, cicilanResult] = await Promise.all([
+    supabase
+      .from('transaksi')
+      .select('id, tipe, nominal, tanggal, tags')
+      .gte('tanggal', minStartDate)
+      .lte('tanggal', maxEndDate),
+    supabase
+      .from('hutang')
+      .select('id, tipe, total_pinjaman, tanggal_mulai')
+      .gte('tanggal_mulai', minStartDate)
+      .lte('tanggal_mulai', maxEndDate),
+    supabase
+      .from('hutang_cicilan')
+      .select(`
+        id,
+        nominal,
+        tanggal,
+        tipe_hutang_snapshot,
+        hutang:hutang_id(tipe)
+      `)
+      .gte('tanggal', minStartDate)
+      .lte('tanggal', maxEndDate),
+  ]);
+
+  if (transaksiResult.error) throw new Error(transaksiResult.error.message);
+  if (hutangResult.error) throw new Error(hutangResult.error.message);
+  if (cicilanResult.error) throw new Error(cicilanResult.error.message);
+
+  return aggregateRekapByPeriods(normalized, {
+    transaksi: (transaksiResult.data as unknown as AggregateTransaksiItem[]) ?? [],
+    hutang: (hutangResult.data as unknown as AggregateHutangItem[]) ?? [],
+    cicilan: (cicilanResult.data as unknown as AggregateCicilanItem[]) ?? [],
+  });
 }
 
 export async function getBudgetWithUsage(bulan: number, tahun: number): Promise<BudgetWithUsage[]> {
@@ -603,3 +730,41 @@ export async function upsertBudget(
   if (error) return { success: false, error: error.message };
   return { success: true };
 }
+
+/**
+ * Mengambil tanggal transaksi paling awal (earliest date) milik pengguna.
+ * Mengembalikan null jika pengguna belum memiliki transaksi sama sekali.
+ */
+export async function getEarliestTransactionDate(): Promise<ActionResult<string | null>> {
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return { success: false, error: 'Tidak terautentikasi' };
+    }
+
+    const { data, error } = await supabase
+      .from('transaksi')
+      .select('tanggal')
+      .eq('user_id', user.id)
+      .order('tanggal', { ascending: true })
+      .limit(1)
+      .maybeSingle();
+
+    if (error && error.code !== 'PGRST116') {
+      return { success: false, error: error.message };
+    }
+
+    return { success: true, data: data?.tanggal ?? null };
+  } catch (err) {
+    const message =
+      err instanceof Error
+        ? err.message
+        : 'Terjadi kesalahan saat memuat tanggal awal transaksi';
+    return { success: false, error: message };
+  }
+}
+

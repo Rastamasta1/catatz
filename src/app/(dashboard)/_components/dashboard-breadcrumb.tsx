@@ -18,6 +18,7 @@ const ROUTE_NAMES: Record<string, string> = {
   debts: "Hutang",
   settings: "Pengaturan",
   categories: "Kategori",
+  detail: "Detail Rekap",
 };
 
 export default function DashboardBreadcrumb() {

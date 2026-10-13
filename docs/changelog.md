@@ -4,6 +4,17 @@ Format mengikuti Keep a Changelog sederhana.
 
 ## Unreleased
 
+### Added
+
+- **Perombakan Menyeluruh Rekap Keuangan (`/reports`)**:
+  - Tiga tab navigasi utama tersinkronisasi URL (`?tab=`): Realtime, Bulanan, dan Custom.
+  - Dialog pengaturan siklus rekap: tanggal cut-off dinamis (1–31) dan toggle Saldo Akumulasi tersimpan pada tabel `rekap_settings`.
+  - Halaman detail rekap periode (`/reports/detail`) tervalidasi Zod dengan metrik finansial terpadu, arus kas hutang/piutang riil (D8), rekonsiliasi saldo awal/akhir mundur (D7), dan grafik proporsi pengeluaran vs sisa saldo (D9).
+  - Rincian breakdown transaksi interaktif (sub-tab Kategori & Judul) dengan drawer/accordion drill-down transaksi individual per item.
+  - Tab Periode Kustom dengan kemampuan CRUD penuh (dialog tambah/edit serta hapus via `ConfirmDialog`) dan tombol aksi melayang (FAB) pill anti-tabrakan.
+  - Suite pengujian E2E Playwright terisolasi (`tests/e2e/rekap-flow.spec.ts`) tanpa ketergantungan Supabase produksi.
+  - Inventarisasi audit komponen dan Server Actions legacy untuk menjamin backward compatibility tanpa penghapusan prematur.
+
 ### Changed
 
 - Migrasi seluruh 5 route dashboard Next.js App Router dari Bahasa Indonesia ke Bahasa Inggris untuk standarisasi konvensi URL path:

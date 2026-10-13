@@ -6,6 +6,20 @@ CatatZ adalah aplikasi pencatatan keuangan berbasis Next.js 16 App Router, Supab
 
 Instruksi detail tetap berada di `docs/ai-development-rules.md`. Anggap file ini sebagai operating manual singkat yang mengikat Codex agar setiap task selesai dengan perubahan yang rapi, dokumentasi yang sinkron, validasi yang jujur, dan suggested commit message yang teknis.
 
+## Production Status & Mandate
+
+> **STATUS PROJECT: PRODUCTION (LIVE)**
+>
+> CatatZ adalah aplikasi pencatatan keuangan pribadi yang **sudah aktif di tahap production (live)**. Aplikasi ini melayani pencatatan data finansial riil pengguna.
+>
+> Setiap model LLM dan AI agent (Codex, Claude, Gemini, Antigravity, dsb.) yang bekerja pada repository ini **WAJIB memperlakukan codebase ini sebagai sistem production-grade**:
+>
+> 1. **Zero-Destructive / Safe Changes**: Codebase ini bukan sandbox, draft, atau prototype. Dilarang melakukan operasi destruktif, menghapus/mengubah struktur database sembarangan, mereset database, atau mengubah migration SQL lama (`src/migrations/001-*.sql` s/d `014-*.sql`) yang sudah berjalan di production. Perubahan schema baru WAJIB berupa migration baru yang additive dan backward-compatible.
+> 2. **Financial Data Integrity**: Perhitungan saldo rekening, transaksi, cicilan hutang/piutang, dan koreksi saldo berdampak langsung pada saldo uang riil pengguna. Database trigger dan invariant perhitungan saldo wajib dipatuhi tanpa kompromi.
+> 3. **Backward Compatibility**: Jangan mengubah routing yang ada (`/transactions`, `/wallets`, `/reports`, `/debts`, `/categories`, `/settings`), Server Action signatures, auth cookie mechanisms, atau RLS policies tanpa backward compatibility.
+> 4. **Production Security Mandate**: Jaga RLS Supabase di setiap query/tabel, pastikan secret (`AI_API_KEY`, credential) tetap server-only, cookie auth selalu `secure: environment.isProduction`, dan sanitasi seluruh input user.
+> 5. **Production Build & Verification Gate**: PWA build harus tetap memakai `next build --webpack` untuk Serwist. Setiap task WAJIB divalidasi dengan `npm run verify:quick` (lint, typecheck, unit test) dan memastikan tidak ada regresi sebelum menyatakan task selesai.
+
 ## Source of Truth
 
 Ada beberapa sumber kebenaran yang harus dipakai sebelum membuat perubahan:
@@ -194,6 +208,7 @@ Clarify the final response contract and require a technical Conventional Commit 
 
 ## Project Rules
 
+- **Status Project**: **Production (Live)**. Utamakan stabilitas, proteksi data riil, dan backward compatibility.
 - Package manager: npm.
 - Build production PWA memakai `next build --webpack`.
 - Project memakai `src/proxy.ts`, bukan `middleware.ts`.
@@ -204,6 +219,7 @@ Clarify the final response contract and require a technical Conventional Commit 
 
 ## Quality and Safety
 
+- Repository ini berstatus **Production**. Utamakan stabilitas, proteksi data riil, dan backward compatibility.
 - Jangan expose secret, token, service role key, atau credential.
 - Jangan revert perubahan user yang tidak terkait.
 - Jangan menjalankan command destruktif tanpa instruksi eksplisit.

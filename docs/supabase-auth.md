@@ -67,7 +67,7 @@ Ada juga `useAuthStore` di `src/stores/auth-store.ts` yang memiliki method `sign
 
 ## Reset Password
 
-Status: Aktif.
+Status: **Production (Aktif)**.
 
 Yang tersedia saat ini:
 
@@ -81,7 +81,7 @@ Yang tersedia saat ini:
 
 ## Google OAuth
 
-Status: Aktif untuk login/register dan Link Identity.
+Status: **Production (Aktif)** untuk login/register dan Link Identity.
 
 Implementasi terkait:
 

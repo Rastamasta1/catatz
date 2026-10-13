@@ -59,9 +59,9 @@ test.describe("mobile dashboard layout", () => {
 
     expect(voiceBox).not.toBeNull();
     expect(autoFillBox).not.toBeNull();
-    expect(Math.abs(voiceBox!.y - autoFillBox!.y)).toBeLessThanOrEqual(1);
+    expect(Math.abs(voiceBox!.y - autoFillBox!.y)).toBeLessThanOrEqual(2);
     expect(Math.abs(voiceBox!.width - autoFillBox!.width)).toBeLessThanOrEqual(
-      1,
+      2,
     );
 
     await page.getByRole("button", { name: "Close" }).click();

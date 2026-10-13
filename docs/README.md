@@ -44,6 +44,7 @@ Folder ini adalah pusat dokumentasi teknis CatatZ. Isi dokumen ditulis berdasark
 
 ## Aturan Pemeliharaan
 
+- **Status Project**: **Production (Live)**. Seluruh kontribusi, perubahan kode, dan interaksi AI/LLM wajib mematuhi standar kehati-hatian production (zero downtime, no destructive schema migration, perlindungan integritas data finansial, dan backward compatibility).
 - Update dokumentasi fitur setiap ada perubahan route, component, server action, atau UI behavior.
 - Update dokumentasi database setiap ada migration baru, policy baru, trigger baru, atau perubahan schema.
 - Update dokumentasi environment dan deployment setiap ada variable baru atau perubahan konfigurasi Vercel/Supabase.

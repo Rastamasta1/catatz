@@ -20,7 +20,7 @@ CatatZ adalah aplikasi pencatatan keuangan pribadi berbasis Next.js dan Supabase
 - Manajemen rekening dengan saldo, logo, warna, dan opsi exclude dari total.
 - Kategori system dan kategori custom user.
 - Hutang/piutang dengan cicilan dan status pelunasan.
-- Rekap bulanan, breakdown kategori, dan tampilan budget jika data budget tersedia.
+- Rekap analitik keuangan terpadu: tab Realtime siklus berjalan, Bulanan terarsip mundur, Custom periode bebas, cut-off siklus fleksibel, toggle akumulasi saldo, halaman detail metrik finansial, dan drill-down transaksi individual.
 - Pengaturan profil, avatar, password, tema, dan export PDF/XLSX/CSV.
 - PWA install prompt, offline shell, update prompt, dan offline queue untuk aksi transaksi.
 - Input suara transaksi menggunakan browser Speech Recognition dan Gemini API server-side.
@@ -84,7 +84,7 @@ Mulai dari:
 
 ## Status Project
 
-Status: aktif dikembangkan. Dokumentasi ini mengikuti kondisi repository saat ini dan perlu ikut diperbarui setiap ada perubahan fitur, database, auth, environment variable, deployment, security, atau struktur folder.
+Status: **Production (Live)**. CatatZ sudah aktif beroperasi di tahap production dan berjalan live. Semua perubahan kode wajib menjaga stabilitas, backward compatibility, keamanan data finansial, serta kepatuhan terhadap aturan arsitektur & desain yang ada. Dokumentasi ini mengikuti kondisi repository saat ini dan wajib ikut diperbarui setiap ada perubahan fitur, database, auth, environment variable, deployment, security, atau struktur folder.
 
 ## Lisensi
 
