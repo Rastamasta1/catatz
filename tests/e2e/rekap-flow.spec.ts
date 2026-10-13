@@ -16,6 +16,7 @@ test.describe("Rekap Keuangan E2E Flow", () => {
     await login(page);
     await page.goto("/reports");
     await expect(page.getByRole("heading", { name: "Rekap Keuangan" })).toBeVisible();
+    await expect(page.locator("[data-hydrated='true']")).toBeVisible();
   });
 
   test("berpindah antar tab Realtime, Bulanan, dan Custom dengan sinkronisasi URL", async ({
@@ -87,9 +88,9 @@ test.describe("Rekap Keuangan E2E Flow", () => {
     await page.getByRole("tab", { name: "Bulanan" }).click();
     await expect(page).toHaveURL(/\/reports\?tab=bulanan/);
 
-    // Tunggu kartu periode muncul di dalam grid
+    // Tunggu kartu periode muncul di dalam grid (memuat fetchCycleData)
     const firstPeriodCard = page.locator("a[href^='/reports/detail']").first();
-    await expect(firstPeriodCard).toBeVisible();
+    await expect(firstPeriodCard).toBeVisible({ timeout: 15000 });
 
     // Klik kartu periode untuk navigasi ke halaman detail
     await firstPeriodCard.click();

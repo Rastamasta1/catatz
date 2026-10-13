@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { SlidersHorizontal } from "lucide-react";
 import { PageHeader } from "@/components/common";
@@ -17,6 +17,8 @@ import type {
   RekapDetailBulanan,
   RekapBulanan,
 } from "@/actions/rekap-action";
+
+const emptySubscribe = () => () => {};
 
 export type RekapPageClientProps = {
   initialSettings?: RekapSettings;
@@ -39,6 +41,7 @@ export default function RekapPageClient({
 
   const [settings, setSettings] = useState<RekapSettings>(initialSettings);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const isHydrated = useSyncExternalStore(emptySubscribe, () => true, () => false);
 
   // Tab aktif disinkronkan dengan URL query `?tab=` (default: realtime)
   const tabParam = searchParams.get("tab")?.toLowerCase();
@@ -59,11 +62,18 @@ export default function RekapPageClient({
     setActiveTab(validTab);
     const params = new URLSearchParams(searchParams.toString());
     params.set("tab", validTab);
-    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+    const nextUrl = `${pathname}?${params.toString()}`;
+    if (typeof window !== "undefined") {
+      window.history.replaceState(window.history.state, "", nextUrl);
+    }
+    router.replace(nextUrl, { scroll: false });
   };
 
   return (
-    <div className="mx-auto w-full max-w-5xl space-y-6">
+    <div
+      data-hydrated={isHydrated ? "true" : undefined}
+      className="mx-auto w-full max-w-5xl space-y-6"
+    >
       {/* Header dengan tombol pengaturan 44px di pojok kanan atas */}
       <PageHeader
         title="Rekap Keuangan"
