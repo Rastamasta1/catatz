@@ -11,6 +11,7 @@ Fitur laporan/rekap menampilkan ringkasan pemasukan, pengeluaran, detail bulanan
 ## Route
 
 - `/reports`
+- `/reports/detail?dari=YYYY-MM-DD&sampai=YYYY-MM-DD&jenis=bulanan|custom[&id=uuid]` (Detail rekap periode)
 - Export data berada di `/settings` tab `Export Data`.
 
 ## Lokasi File
@@ -20,6 +21,10 @@ Fitur laporan/rekap menampilkan ringkasan pemasukan, pengeluaran, detail bulanan
 - Client page: `src/app/(dashboard)/reports/_components/rekap-page-client.tsx`
 - Realtime tab: `src/app/(dashboard)/reports/_components/rekap-realtime-tab.tsx`
 - Settings dialog: `src/app/(dashboard)/reports/_components/rekap-settings-dialog.tsx`
+- Detail page: `src/app/(dashboard)/reports/detail/page.tsx`
+- Detail loading: `src/app/(dashboard)/reports/detail/loading.tsx`
+- Detail client component: `src/app/(dashboard)/reports/detail/_components/rekap-detail-client.tsx`
+- Proporsi saldo chart: `src/app/(dashboard)/reports/detail/_components/proporsi-saldo-chart.tsx`
 - Chart components (`RekapBarChart`, `RekapPieChart`, `RekapDonutChart`): `src/app/(dashboard)/reports/_components/rekap-charts.tsx`
 - Detail bulanan (legacy, dipertahankan): `src/app/(dashboard)/reports/_components/rekap-monthly-detail-section.tsx`
 - Summary cards (legacy, dipertahankan): `src/app/(dashboard)/reports/_components/rekap-summary-cards.tsx`
@@ -120,6 +125,24 @@ Export data:
   - Merender daftar kategori pengeluaran: ikon kategori, nama kategori, persentase (`font-mono`), nominal (`font-mono`), dan batang proporsi progress bar yang diwarnai sesuai warna kategori.
   - Otomatis melakukan re-fetch data saat window kembali fokus (`focus`), tab kembali aktif (`visibilitychange`), atau perangkat kembali online (`online`) (D5).
   - Menampilkan `EmptyState` bila belum ada transaksi pengeluaran pada siklus berjalan.
+- **Halaman Detail Rekap (`/reports/detail`)**:
+  - Validasi parameter kueri secara asinkron di Server Component (`searchParams`) menggunakan Zod schema `rekapDetailQuerySchema` (`dari`, `sampai`, `jenis: 'bulanan' | 'custom'`, `id?: uuid`), me-redirect ke `notFound()` jika parameter tidak valid atau rentang tanggal terbalik.
+  - Untuk `jenis === 'custom'` dengan parameter `id`, mengambil nama periode via `getCustomPeriod(id)`. Jika periode kustom tidak ditemukan di database, memicu `notFound()`.
+  - Mengambil data ringkasan via `getRekapDetailByRange(dari, sampai)`.
+  - Tombol kembali menuju tab asal (`/reports?tab=${jenis}`) berbentuk pill (`rounded-full`) dengan tap target minimum 44px.
+  - Label periode terformat (`formatPeriodLabel`), nama kustom (bila ada), dan badge jenis periode.
+  - Tiga kartu ringkasan utama: Total Pengeluaran (rata-rata/hari), Total Pemasukan (rata-rata/hari), dan Selisih Utama (Pemasukan dikurangi Pengeluaran).
+  - Kartu Rincian Finansial Periode:
+    - Pengeluaran & rata-rata pengeluaran per hari (`text-semantic-down font-mono`).
+    - Pemasukan & rata-rata pemasukan per hari (`text-semantic-up font-mono`).
+    - Selisih utama (`signed font-mono`).
+    - Baris Koreksi Saldo (`signed font-mono`), hanya tampil jika ada aktivitas koreksi (`detail.koreksi.count > 0`).
+    - Baris Arus Kas Hutang & Piutang (`signed font-mono`), hanya tampil jika ada mutasi hutang/piutang (`detail.hutang_piutang.count > 0`), dihitung dengan formula arus kas bersih D8: `(hutang_baru + cicilan_piutang) - (piutang_baru + cicilan_hutang)`.
+    - Baris Saldo Awal dan Saldo Akhir (`font-mono`), hanya tampil jika toggle akumulasi saldo aktif (`settings.akumulasi_saldo === true`), dihitung menggunakan `getSaldoPeriodeList`.
+  - Kartu Grafik Proporsi Pengeluaran vs Sisa Saldo (Definisi D9):
+    - Donut chart Recharts dengan persentase dan nominal terformat.
+    - Sisa saldo dihitung dari: `total_income + (akumulasiAktif ? saldoAwal : 0) - total_expense`.
+    - Jika defisit (`sisaSaldo < 0`), chart merender 100% slice pengeluaran disertai badge dan banner peringatan defisit berwarna `semantic-down`.
 - Komponen rekap legacy (`rekap-summary-cards`, `rekap-monthly-detail-section`, `rekap-kategori-section`, `rekap-bar-section`, `rekap-charts`, `rekap-budget-section`) tidak dihapus dan tidak diedit untuk menjamin backward compatibility.
 - Export PDF memakai dynamic import `src/lib/pdf-generator.ts`.
 - Export XLSX/CSV memakai dynamic import `src/lib/spreadsheet-generator.ts`.
@@ -127,5 +150,5 @@ Export data:
 ## TODO / Improvement
 
 - UI untuk membuat/mengubah budget belum terlihat, walaupun action `upsertBudget` dan table `budget` sudah ada.
-- Integrasi kartu ringkasan dan list siklus pada Tab Bulanan (Fase 8+).
+- Integrasi kartu ringkasan dan list siklus pada Tab Bulanan (Fase 9+).
 

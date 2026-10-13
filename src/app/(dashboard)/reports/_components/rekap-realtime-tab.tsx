@@ -153,7 +153,7 @@ export function RekapRealtimeTab({ settings }: RekapRealtimeTabProps) {
         <div className="grid gap-6 md:grid-cols-2">
           <Card className="rounded-card border border-hairline bg-card p-6">
             <Skeleton className="mb-4 h-5 w-44" />
-            <Skeleton className="mx-auto h-[260px] w-[260px] rounded-full" />
+            <Skeleton className="mx-auto h-65 w-65 rounded-full" />
           </Card>
           <Card className="rounded-card border border-hairline bg-card p-6">
             <Skeleton className="mb-4 h-5 w-40" />
@@ -194,8 +194,8 @@ export function RekapRealtimeTab({ settings }: RekapRealtimeTabProps) {
             <CardContent className="p-6 pt-0">
               <Suspense
                 fallback={
-                  <div className="flex h-[260px] items-center justify-center">
-                    <Skeleton className="h-[220px] w-[220px] rounded-full" />
+                  <div className="flex h-65 items-center justify-center">
+                    <Skeleton className="h-55 w-55 rounded-full" />
                   </div>
                 }
               >
@@ -212,7 +212,7 @@ export function RekapRealtimeTab({ settings }: RekapRealtimeTabProps) {
               </CardTitle>
             </CardHeader>
             <CardContent className="p-6 pt-2">
-              <div className="space-y-4 max-h-[340px] overflow-y-auto pr-1">
+              <div className="space-y-4 max-h-85 overflow-y-auto pr-1">
                 {expenseData.map((item) => (
                   <div key={item.id} className="space-y-1.5">
                     <div className="flex items-center justify-between gap-3 text-sm">

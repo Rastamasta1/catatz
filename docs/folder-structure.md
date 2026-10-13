@@ -85,6 +85,7 @@ Route aktual:
 /transactions          -> transaksi
 /wallets               -> rekening
 /reports               -> laporan/rekap
+/reports/detail        -> detail rekap periode (?dari=...&sampai=...&jenis=...)
 /debts                 -> hutang/piutang
 /categories            -> kategori
 /settings              -> pengaturan

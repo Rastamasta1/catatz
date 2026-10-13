@@ -98,3 +98,32 @@ export const customPeriodSchema = z
   );
 
 export type CustomPeriodSchema = z.infer<typeof customPeriodSchema>;
+
+/**
+ * Schema validasi query parameter halaman detail rekap (/reports/detail)
+ * Format query: ?dari=YYYY-MM-DD&sampai=YYYY-MM-DD&jenis=bulanan|custom[&id=uuid]
+ */
+export const rekapDetailQuerySchema = z
+  .object({
+    dari: dateStringSchema,
+    sampai: dateStringSchema,
+    jenis: z.enum(["bulanan", "custom"], {
+      error: "Jenis periode harus 'bulanan' atau 'custom'",
+    }),
+    id: z.string().uuid("ID periode kustom harus berupa UUID yang valid").optional(),
+  })
+  .refine(
+    (data) => {
+      if (!parseDateString(data.dari) || !parseDateString(data.sampai)) {
+        return true;
+      }
+      return compareDates(data.sampai, data.dari) >= 0;
+    },
+    {
+      message: "Tanggal sampai tidak boleh lebih awal dari tanggal dari",
+      path: ["sampai"],
+    },
+  );
+
+export type RekapDetailQuerySchema = z.infer<typeof rekapDetailQuerySchema>;
+
