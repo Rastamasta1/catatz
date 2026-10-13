@@ -2,14 +2,14 @@
 
 import { useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { CalendarRange, SlidersHorizontal } from "lucide-react";
-import { PageHeader, EmptyState } from "@/components/common";
+import { SlidersHorizontal } from "lucide-react";
+import { PageHeader } from "@/components/common";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { RekapSettingsDialog } from "./rekap-settings-dialog";
 import { RekapRealtimeTab } from "./rekap-realtime-tab";
 import { RekapBulananTab } from "./rekap-bulanan-tab";
+import { RekapCustomTab } from "./rekap-custom-tab";
 import type { RekapSettings } from "@/types/rekap";
 import { DEFAULT_REKAP_SETTINGS } from "@/validations/rekap-validation";
 import type {
@@ -95,15 +95,7 @@ export default function RekapPageClient({
 
         {/* Tab Custom */}
         <TabsContent value="custom" className="mt-0">
-          <Card className="rounded-card border border-hairline bg-card">
-            <CardContent className="p-6">
-              <EmptyState
-                icon={CalendarRange}
-                title="Tab Custom"
-                description="Rekap keuangan rentang periode kustom akan tampil di sini."
-              />
-            </CardContent>
-          </Card>
+          <RekapCustomTab settings={settings} />
         </TabsContent>
       </Tabs>
 

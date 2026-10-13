@@ -21,6 +21,8 @@ Fitur laporan/rekap menampilkan ringkasan pemasukan, pengeluaran, detail bulanan
 - Client page: `src/app/(dashboard)/reports/_components/rekap-page-client.tsx`
 - Realtime tab: `src/app/(dashboard)/reports/_components/rekap-realtime-tab.tsx`
 - Bulanan tab: `src/app/(dashboard)/reports/_components/rekap-bulanan-tab.tsx`
+- Custom tab: `src/app/(dashboard)/reports/_components/rekap-custom-tab.tsx`
+- Custom dialog: `src/app/(dashboard)/reports/_components/rekap-custom-dialog.tsx`
 - Period card: `src/app/(dashboard)/reports/_components/rekap-period-card.tsx`
 - Settings dialog: `src/app/(dashboard)/reports/_components/rekap-settings-dialog.tsx`
 - Detail page: `src/app/(dashboard)/reports/detail/page.tsx`
@@ -170,6 +172,26 @@ Export data:
     - Mode akumulasi saldo aktif: Saldo Awal, Pengeluaran, Pemasukan, Selisih, Hutang Piutang, dan Saldo Akhir.
     - Baris Koreksi Saldo (`signed font-mono`) hanya ditampilkan jika terdapat aktivitas koreksi saldo (`koreksi.count > 0` atau `koreksi.net !== 0`).
     - Seluruh nominal keuangan berformat `font-mono` dengan aturan warna semantik strictly text-only sesuai `DESIGN.md`.
+- **Tab Periode Kustom (`RekapCustomTab`) & Dialog Kustom (`RekapCustomDialog`)**:
+  - `RekapCustomTab` memuat daftar periode kustom via Server Action `listCustomPeriods` (diurutkan tanggal mulai terbaru).
+  - Mengambil agregasi finansial secara batch via `getRekapRingkasanPeriodeList(ranges)` dan `getSaldoPeriodeList(ranges)` (jika akumulasi saldo aktif).
+  - Merender kartu `RekapPeriodCard` bertipe `jenis="custom"` yang menautkan langsung ke `/reports/detail?dari=...&sampai=...&jenis=custom&id=uuid`, menampilkan nama kustom, serta tombol ubah periode (`onEdit`).
+  - Menampilkan `EmptyState` jika belum ada periode kustom yang dibuat pengguna, lengkap dengan tombol CTA "Tambah Periode Kustom".
+  - **Floating Action Button (FAB)**:
+    - Tombol CTA melayang berbentuk pill (`rounded-full bg-primary`) dengan ikon `Plus` dan label "Periode Baru".
+    - Tap target aman: tinggi 48px (`h-12 min-h-[44px] px-5`).
+    - **Posisi & Anti-Tabrakan**:
+      - Mobile (`< 768px`): `fixed right-4 bottom-[calc(7.5rem+env(safe-area-inset-bottom))] z-40`.
+      - Desktop (`md+`): `fixed right-8 bottom-8 z-40`.
+      - **Alasan Pemilihan Posisi**: Tombol panduan iOS install guide (`ios-install-guide.tsx`) berada pada `fixed right-4 bottom-16` (tinggi 40px, menjangkau 64px–104px dari dasar viewport). Offset `bottom-[calc(7.5rem+...)]` (120px + safe area) memberikan jarak celah vertikal bersih 16px di atas tombol iOS install guide. Di saat yang sama, bilah `OfflineIndicator` berada di `fixed inset-x-3 bottom-3` (12px–56px), sehingga ketiga elemen mengambang tetap terlihat jelas dan dapat ditekan dengan nyaman tanpa tabrakan.
+  - **Dialog Periode Kustom (`RekapCustomDialog`)**:
+    - Input nama periode (1–100 karakter, menggunakan `ClearableInput`).
+    - Input grid responsif untuk tanggal mulai dan tanggal selesai.
+    - Validasi client & server menggunakan `customPeriodSchema` (Zod v4).
+    - Mode tambah: memanggil `createCustomPeriod(values)`.
+    - Mode edit: memanggil `updateCustomPeriod(editData.id, values)`.
+    - Mode edit menyediakan tombol aksi "Hapus" yang dilindungi dialog konfirmasi `ConfirmDialog` (`deleteCustomPeriod(editData.id)`).
+    - Setelah mutasi berhasil, menampilkan notifikasi Sonner toast dan memicu reload data daftar periode secara reaktif.
 - Komponen rekap legacy (`rekap-summary-cards`, `rekap-monthly-detail-section`, `rekap-kategori-section`, `rekap-bar-section`, `rekap-charts`, `rekap-budget-section`) tidak dihapus dan tidak diedit untuk menjamin backward compatibility.
 - Export PDF memakai dynamic import `src/lib/pdf-generator.ts`.
 - Export XLSX/CSV memakai dynamic import `src/lib/spreadsheet-generator.ts`.
@@ -177,5 +199,5 @@ Export data:
 ## TODO / Improvement
 
 - UI untuk membuat/mengubah budget belum terlihat, walaupun action `upsertBudget` dan table `budget` sudah ada.
-- Tab Custom (`rekap-custom-tab.tsx`) untuk pengelolaan periode kustom pengguna (Fase 11+).
+- Penyempurnaan akhir dan audit komprehensif seluruh tab rekap (Fase 12).
 

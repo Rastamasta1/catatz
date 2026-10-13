@@ -26,6 +26,7 @@ vi.mock("next/navigation", () => ({
 
 vi.mock("@/actions/rekap-period-action", () => ({
   updateRekapSettings: vi.fn(),
+  listCustomPeriods: vi.fn().mockResolvedValue({ success: true, data: [] }),
 }));
 
 vi.mock("@/actions/rekap-action", () => ({
@@ -110,12 +111,14 @@ describe("RekapPageClient & RekapSettingsDialog", () => {
     expect(mockReplace).toHaveBeenCalledWith("/reports?tab=bulanan", { scroll: false });
   });
 
-  it("respects tab from query params", () => {
+  it("respects tab from query params", async () => {
     mockSearchParamTab = "custom";
     render(<RekapPageClient />);
 
     expect(screen.getByRole("tab", { name: "Custom" })).toHaveAttribute("data-state", "active");
-    expect(screen.getByText("Tab Custom")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText("Belum Ada Periode Kustom")).toBeInTheDocument();
+    });
   });
 
   it("opens rekap settings dialog when settings button is clicked", () => {
