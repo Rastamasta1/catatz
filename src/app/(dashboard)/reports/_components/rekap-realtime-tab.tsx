@@ -260,8 +260,8 @@ export function RekapRealtimeTab({ settings }: RekapRealtimeTabProps) {
         <div className="grid gap-6 md:grid-cols-2 items-stretch">
           {/* Kolom Kiri: Donut Recharts */}
           <Card className="rounded-card border border-hairline bg-card h-full flex flex-col justify-between">
-            <CardHeader className="p-6 pb-2">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <CardHeader className="p-6 pb-3">
+              <div className="flex flex-col gap-3 sm:h-9 sm:flex-row sm:items-center sm:justify-between">
                 <CardTitle className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
                   Proporsi {mode === "kategori" ? "Kategori" : "Judul"}
                 </CardTitle>
@@ -289,7 +289,7 @@ export function RekapRealtimeTab({ settings }: RekapRealtimeTabProps) {
                 </Tabs>
               </div>
             </CardHeader>
-            <CardContent className="p-6 pt-0 flex-1 flex flex-col justify-center">
+            <CardContent className="p-6 pt-3 flex-1 flex flex-col justify-center">
               <Suspense
                 fallback={
                   <div className="flex h-65 items-center justify-center">
@@ -304,24 +304,31 @@ export function RekapRealtimeTab({ settings }: RekapRealtimeTabProps) {
 
           {/* Kolom Kanan: Rincian Daftar (Kategori / Judul) */}
           <Card className="rounded-card border border-hairline bg-card h-full flex flex-col justify-between">
-            <CardHeader className="p-6 pb-2">
-              <div className="flex items-center justify-between">
+            <CardHeader className="p-6 pb-3">
+              <div className="flex h-9 items-center justify-between">
                 <CardTitle className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
                   Rincian {mode === "kategori" ? "Kategori" : "Judul"} ({activeData.length})
                 </CardTitle>
-                <span className="font-mono text-xs text-muted-foreground">
-                  {mode === "kategori" ? "per Kategori" : "per Judul"}
+                <span className="inline-flex items-center rounded-full bg-surface-strong px-2.5 py-1 font-mono text-xs text-muted-foreground">
+                  {activeData.length} {mode === "kategori" ? "kategori" : "judul"}
                 </span>
               </div>
             </CardHeader>
-            <CardContent className="p-6 pt-2 flex-1 flex flex-col justify-start">
-              <div className="space-y-4 max-h-85 overflow-y-auto pr-1">
+            <CardContent className="p-6 pt-3 flex-1 flex flex-col justify-start">
+              <div className="space-y-1.5 max-h-75 overflow-y-auto pr-1">
                 {activeData.map((item, idx) => (
-                  <div key={item.id || idx} className="space-y-1.5">
+                  <div
+                    key={item.id || idx}
+                    className="group rounded-input p-2.5 transition-colors hover:bg-surface-soft/60 space-y-1.5"
+                  >
                     <div className="flex items-center justify-between gap-3 text-sm">
                       <div className="flex items-center gap-2.5 min-w-0">
                         <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-surface-strong text-sm">
-                          {item.icon || (mode === "kategori" ? "🏷️" : "📝")}
+                          {mode === "kategori" ? (
+                            item.icon || "🏷️"
+                          ) : (
+                            <Receipt className="size-3.5 text-muted-foreground" />
+                          )}
                         </span>
                         <span className="truncate font-medium text-foreground">
                           {item.label}

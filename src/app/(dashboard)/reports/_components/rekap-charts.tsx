@@ -143,8 +143,8 @@ export function RekapDonutChart({
             nameKey="label"
             cx="50%"
             cy="50%"
-            innerRadius={68}
-            outerRadius={94}
+            innerRadius={78}
+            outerRadius={105}
             paddingAngle={2}
           >
             {data.map((entry, index) => (
@@ -160,11 +160,11 @@ export function RekapDonutChart({
           <Tooltip formatter={(value) => formatRupiah(Number(value))} />
         </PieChart>
       </ResponsiveContainer>
-      <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
+      <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center px-4">
         <span className="text-xs font-medium text-muted-foreground">
           {centerLabel}
         </span>
-        <span className="font-mono text-lg font-bold text-foreground sm:text-xl">
+        <span className="font-mono text-base font-bold tracking-tight text-foreground sm:text-lg max-w-37.5 truncate">
           {formatRupiah(computedTotal)}
         </span>
       </div>

@@ -299,4 +299,75 @@ describe("RekapPageClient & RekapSettingsDialog", () => {
     expect(screen.getByText("Total Pengeluaran")).toBeInTheDocument();
     expect(screen.getByText("Rp 150.000")).toBeInTheDocument();
   });
+
+  it("switches RekapRealtimeTab to Judul and displays titles with receipt icon and count badge", async () => {
+    vi.mocked(rekapActions.getRekapDetailByRange).mockResolvedValueOnce({
+      startDate: "2026-06-01",
+      endDate: "2026-06-30",
+      daysInPeriod: 30,
+      daysInMonth: 30,
+      total_income: 1000000,
+      total_expense: 500000,
+      net: 500000,
+      rata_income_harian: 33333,
+      rata_expense_harian: 16667,
+      kategori: {
+        income: [],
+        expense: [
+          {
+            id: "kat-1",
+            tipe: "expense",
+            label: "Makanan & Minuman",
+            icon: "🍔",
+            color: "#0052ff",
+            total: 500000,
+            count: 2,
+            persentase: 100,
+            transaksi: [],
+          },
+        ],
+      },
+      judul: {
+        income: [],
+        expense: [
+          {
+            id: "jud-1",
+            tipe: "expense",
+            label: "Makan Siang Resto",
+            icon: "",
+            color: "#0052ff",
+            total: 500000,
+            count: 2,
+            persentase: 100,
+            transaksi: [],
+          },
+        ],
+      },
+      koreksi: { total_tambah: 0, total_kurang: 0, net: 0, count: 0, items: [] },
+      hutang_piutang: {
+        piutang_baru: 0,
+        hutang_baru: 0,
+        cicilan_piutang: 0,
+        cicilan_hutang: 0,
+        piutang_aktif: 0,
+        hutang_aktif: 0,
+        count: 0,
+        items: [],
+      },
+    });
+
+    render(<RekapRealtimeTab settings={{ cutoff_day: 1, akumulasi_saldo: false }} />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Makanan & Minuman")).toBeInTheDocument();
+    });
+
+    const judulTab = screen.getByRole("tab", { name: "Judul" });
+    fireEvent.mouseDown(judulTab, { button: 0 });
+    fireEvent.click(judulTab);
+
+    expect(screen.getByText("Rincian Judul (1)")).toBeInTheDocument();
+    expect(screen.getByText("Makan Siang Resto")).toBeInTheDocument();
+    expect(screen.getByText("1 judul")).toBeInTheDocument();
+  });
 });

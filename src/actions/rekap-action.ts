@@ -273,9 +273,7 @@ function buildBreakdown(
     const icon =
       mode === 'kategori'
         ? (item.kategori?.ikon ?? 'Tag')
-        : item.tipe === 'income'
-          ? 'Masuk'
-          : 'Keluar';
+        : '';
 
     if (!grouped[groupId]) {
       grouped[groupId] = {
