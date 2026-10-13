@@ -1,3 +1,5 @@
+export type { RekapPreferences } from "@/types/rekap";
+
 export const THEME_PREFERENCES = ["light", "dark", "system"] as const;
 export const CURRENCY_PREFERENCES = ["IDR"] as const;
 export const DATE_FORMAT_PREFERENCES = ["id-ID", "en-US"] as const;
@@ -26,12 +28,14 @@ export type UserPreferences = {
   default_landing_page: LandingPagePreference;
   show_decimal_places: boolean;
   time_format: TimeFormatPreference;
+  rekap_start_day: number;
+  rekap_accumulate_balance: boolean;
 };
 
 export type UserPreferenceUpdate = Partial<UserPreferences>;
 
 export const USER_PREFERENCE_SELECT =
-  "theme, currency, date_format, number_format, default_landing_page, show_decimal_places, time_format";
+  "theme, currency, date_format, number_format, default_landing_page, show_decimal_places, time_format, rekap_start_day, rekap_accumulate_balance";
 
 export const DEFAULT_USER_PREFERENCES: UserPreferences = {
   theme: "system",
@@ -41,6 +45,8 @@ export const DEFAULT_USER_PREFERENCES: UserPreferences = {
   default_landing_page: "/transactions",
   show_decimal_places: false,
   time_format: "24h",
+  rekap_start_day: 1,
+  rekap_accumulate_balance: true,
 };
 
 const PREFERENCE_OPTIONS = {
@@ -57,6 +63,15 @@ function isOneOf<T extends readonly string[]>(
   options: T,
 ): value is T[number] {
   return typeof value === "string" && options.includes(value);
+}
+
+function isValidRekapStartDay(value: unknown): value is number {
+  return (
+    typeof value === "number" &&
+    Number.isInteger(value) &&
+    value >= 1 &&
+    value <= 31
+  );
 }
 
 export function normalizeUserPreferences(
@@ -88,6 +103,13 @@ export function normalizeUserPreferences(
     time_format: isOneOf(input?.time_format, TIME_FORMAT_PREFERENCES)
       ? input.time_format
       : DEFAULT_USER_PREFERENCES.time_format,
+    rekap_start_day: isValidRekapStartDay(input?.rekap_start_day)
+      ? input.rekap_start_day
+      : DEFAULT_USER_PREFERENCES.rekap_start_day,
+    rekap_accumulate_balance:
+      typeof input?.rekap_accumulate_balance === "boolean"
+        ? input.rekap_accumulate_balance
+        : DEFAULT_USER_PREFERENCES.rekap_accumulate_balance,
   };
 }
 
@@ -102,6 +124,8 @@ export function validateUserPreferenceUpdate(
     "default_landing_page",
     "show_decimal_places",
     "time_format",
+    "rekap_start_day",
+    "rekap_accumulate_balance",
   ]);
   const data: UserPreferenceUpdate = {};
 
@@ -121,6 +145,37 @@ export function validateUserPreferenceUpdate(
       }
 
       data.show_decimal_places = value;
+      continue;
+    }
+
+    if (key === "rekap_accumulate_balance") {
+      if (typeof value !== "boolean") {
+        return {
+          success: false,
+          error: "Preferensi akumulasi saldo tidak valid",
+        };
+      }
+
+      data.rekap_accumulate_balance = value;
+      continue;
+    }
+
+    if (key === "rekap_start_day") {
+      const numValue =
+        typeof value === "number"
+          ? value
+          : typeof value === "string" && value.trim() !== ""
+            ? Number(value)
+            : NaN;
+
+      if (!Number.isInteger(numValue) || numValue < 1 || numValue > 31) {
+        return {
+          success: false,
+          error: "Tanggal mulai rekap harus antara 1 dan 31",
+        };
+      }
+
+      data.rekap_start_day = numValue;
       continue;
     }
 

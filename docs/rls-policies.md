@@ -26,7 +26,7 @@ Catatan: Tidak ada policy INSERT untuk user biasa karena profile dibuat oleh tri
 | INSERT | `user_preferences: insert own` | `WITH CHECK auth.uid() = user_id` | User hanya membuat preferensi untuk dirinya sendiri. |
 | UPDATE | `user_preferences: update own` | `auth.uid() = user_id` | User hanya mengubah preferensi sendiri. |
 
-Catatan: Migration `013-extend-user-preferences-formatting.sql` hanya menambah kolom formatting pada table ini; policy RLS lama tetap mencakup kolom baru.
+Catatan: Migration `013-extend-user-preferences-formatting.sql` dan `015-rekap-preferences-and-custom-reports.sql` menambah kolom formatting dan konfigurasi rekap pada table ini; policy RLS lama tetap mencakup kolom baru.
 
 ## Tabel `rekening`
 
@@ -94,6 +94,15 @@ Catatan: Policy UPDATE ditambahkan oleh `011-hutang-cicilan-balance-safety.sql` 
 | INSERT | `recurring: insert own` | `WITH CHECK auth.uid() = user_id` | User hanya membuat recurring transaction untuk diri sendiri. |
 | UPDATE | `recurring: update own` | `auth.uid() = user_id` | User hanya mengubah recurring transaction sendiri. |
 | DELETE | `recurring: delete own` | `auth.uid() = user_id` | User hanya menghapus recurring transaction sendiri. |
+
+## Tabel `rekap_kustom`
+
+| Action | Policy Name | Rule | Description |
+|---|---|---|---|
+| SELECT | `rekap_kustom: select own` | `auth.uid() = user_id` | User hanya membaca rekap kustom miliknya sendiri. |
+| INSERT | `rekap_kustom: insert own` | `WITH CHECK auth.uid() = user_id` | User hanya membuat rekap kustom untuk dirinya sendiri. |
+| UPDATE | `rekap_kustom: update own` | `auth.uid() = user_id` | User hanya mengubah rekap kustom miliknya sendiri. |
+| DELETE | `rekap_kustom: delete own` | `auth.uid() = user_id` | User hanya menghapus rekap kustom miliknya sendiri. |
 
 ## Storage Bucket `avatars`
 
