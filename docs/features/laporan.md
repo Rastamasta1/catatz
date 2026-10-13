@@ -53,6 +53,8 @@ Export data:
 
 - `getRekapBulanan`
 - `getRekapDetailBulanan`
+- `getRekapDetailByRange`
+- `getRekapRingkasanPeriodeList`
 - `getRekapKategori`
 - `getBudgetWithUsage`
 - `upsertBudget`
@@ -61,11 +63,17 @@ Export data:
 
 ## Business Rules
 
-- Rekap bulanan menghitung `income` dan `expense`; `transfer` dan `correction` tidak masuk selisih utama.
+- Rekap bulanan menghitung `income` dan `expense`; `transfer` dan `correction` tidak masuk selisih utama (D12).
 - Detail bulan menampilkan selisih pemasukan/pengeluaran, rata-rata harian, serta total selisih koreksi saldo dan hutang/piutang jika ada aktivitas pada bulan tersebut.
 - Koreksi saldo dan hutang/piutang tidak diselisihkan ke nominal utama pemasukan dikurangi pengeluaran.
 - Breakdown detail dapat dilihat berdasarkan kategori atau judul untuk transaksi `income` dan `expense`.
-- Detail hutang/piutang dihitung dari hutang/piutang baru dan cicilan pada bulan terpilih.
+- Detail hutang/piutang dihitung dari hutang/piutang baru dan cicilan pada rentang tanggal terpilih.
+- **Catatan Rekonsiliasi Arus Kas Hutang/Piutang (D8)**:
+  - Rumus lama `hutangPiutangNet` pada komponen UI `rekap-monthly-detail-section.tsx` saat ini menghitung:
+    `piutang_baru + cicilan_piutang - hutang_baru - cicilan_hutang`
+  - Rumus tersebut berbeda tanda (+ / -) dengan Keputusan Arsitektur D8 untuk arus kas riil bersih:
+    `hutang_baru - piutang_baru - cicilan_hutang + cicilan_piutang` (menerima pinjaman dan terima cicilan piutang menambah saldo uang riil/kas masuk; memberi pinjaman dan bayar cicilan hutang mengurangi saldo uang riil/kas keluar).
+  - Komponen `rekap-monthly-detail-section.tsx` dipertahankan tanpa perubahan pada Fase 4 dan direkonsiliasi pada fase UI terkait berikutnya (Fase 5/6).
 - Budget usage menghitung expense per kategori pada bulan/tahun terpilih.
 - Export PDF, XLSX, dan CSV dapat difilter dengan tanggal `dari` dan `sampai`.
 - Export PDF menampilkan summary, count transaksi, periode, top kategori, dan detail transaksi.

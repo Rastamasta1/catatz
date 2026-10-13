@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   rekapSettingsSchema,
   customPeriodSchema,
+  dateRangeSchema,
   DEFAULT_REKAP_SETTINGS,
 } from "@/validations/rekap-validation";
 
@@ -314,3 +315,51 @@ describe("customPeriodSchema", () => {
     });
   });
 });
+
+describe("dateRangeSchema", () => {
+  it("harus menerima rentang tanggal yang valid (sampai >= dari)", () => {
+    const result = dateRangeSchema.safeParse({
+      dari: "2026-04-01",
+      sampai: "2026-04-30",
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("harus menerima rentang 1 hari (dari === sampai)", () => {
+    const result = dateRangeSchema.safeParse({
+      dari: "2026-04-15",
+      sampai: "2026-04-15",
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("harus menolak jika sampai < dari", () => {
+    const result = dateRangeSchema.safeParse({
+      dari: "2026-04-15",
+      sampai: "2026-04-10",
+    });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.issues[0]?.message).toBe(
+        "Tanggal sampai tidak boleh lebih awal dari tanggal dari",
+      );
+    }
+  });
+
+  it("harus menolak format tanggal dari yang salah", () => {
+    const result = dateRangeSchema.safeParse({
+      dari: "15-04-2026",
+      sampai: "2026-04-30",
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("harus menolak format tanggal sampai yang salah", () => {
+    const result = dateRangeSchema.safeParse({
+      dari: "2026-04-01",
+      sampai: "2026/04/30",
+    });
+    expect(result.success).toBe(false);
+  });
+});
+

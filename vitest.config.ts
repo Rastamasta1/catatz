@@ -21,6 +21,7 @@ export default defineConfig({
         "src/lib/utils.ts",
         "src/lib/transaction-auto-fill.ts",
         "src/lib/rekap-period.ts",
+        "src/lib/rekap-aggregate.ts",
         ".ecc/hooks/core.mjs",
       ],
       thresholds: {

@@ -30,7 +30,7 @@ export type RekapSettingsSchema = z.infer<typeof rekapSettingsSchema>;
 /**
  * Helper schema untuk string tanggal ISO YYYY-MM-DD yang valid kalendernya
  */
-const dateStringSchema = z
+export const dateStringSchema = z
   .string({
     error: "Tanggal wajib diisi",
   })
@@ -38,6 +38,32 @@ const dateStringSchema = z
   .refine((val) => parseDateString(val) !== null, {
     message: "Format tanggal tidak valid",
   });
+
+/**
+ * Schema validasi rentang tanggal dari dan sampai (YYYY-MM-DD valid, sampai >= dari)
+ */
+export const dateRangeSchema = z
+  .object({
+    dari: dateStringSchema,
+    sampai: dateStringSchema,
+  })
+  .refine(
+    (data) => {
+      if (
+        !parseDateString(data.dari) ||
+        !parseDateString(data.sampai)
+      ) {
+        return true;
+      }
+      return compareDates(data.sampai, data.dari) >= 0;
+    },
+    {
+      message: "Tanggal sampai tidak boleh lebih awal dari tanggal dari",
+      path: ["sampai"],
+    },
+  );
+
+export type DateRangeSchema = z.infer<typeof dateRangeSchema>;
 
 /**
  * Schema validasi periode kustom rekap
