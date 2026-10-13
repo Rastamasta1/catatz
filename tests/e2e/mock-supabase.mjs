@@ -150,6 +150,17 @@ function getTableRows(tableName) {
         updated_at: now,
       },
     ],
+    rekap_periode_custom: [
+      {
+        id: "00000000-0000-4000-8000-000000000060",
+        user_id: userId,
+        nama: "Liburan Musim Panas",
+        tanggal_mulai: "2026-06-01",
+        tanggal_selesai: "2026-06-30",
+        created_at: now,
+        updated_at: now,
+      },
+    ],
   };
 
   return rows[tableName] ?? [];

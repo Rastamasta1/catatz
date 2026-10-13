@@ -198,6 +198,6 @@ Export data:
 
 ## TODO / Improvement
 
-- UI untuk membuat/mengubah budget belum terlihat, walaupun action `upsertBudget` dan table `budget` sudah ada.
-- Penyempurnaan akhir dan audit komprehensif seluruh tab rekap (Fase 12).
+- UI untuk membuat/mengubah budget belum terlihat, walaupun action `upsertBudget` dan table `budget` sudah ada (fitur budget kalender lama tidak dirender di antarmuka rekap baru sesuai D11).
+- Perombakan fitur rekap telah selesai penuh sampai Fase 12 (tercakup suite E2E Playwright `tests/e2e/rekap-flow.spec.ts` dan inventarisasi pembersihan legacy).
 

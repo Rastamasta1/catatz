@@ -42,12 +42,23 @@ export default function RekapPageClient({
 
   // Tab aktif disinkronkan dengan URL query `?tab=` (default: realtime)
   const tabParam = searchParams.get("tab")?.toLowerCase();
-  const activeTab: TabValue =
+  const resolvedTab: TabValue =
     tabParam === "bulanan" || tabParam === "custom" ? tabParam : "realtime";
 
+  const [activeTab, setActiveTab] = useState<TabValue>(resolvedTab);
+  const [prevResolvedTab, setPrevResolvedTab] = useState<TabValue>(resolvedTab);
+
+  if (prevResolvedTab !== resolvedTab) {
+    setPrevResolvedTab(resolvedTab);
+    setActiveTab(resolvedTab);
+  }
+
   const handleTabChange = (nextTab: string) => {
+    const validTab: TabValue =
+      nextTab === "bulanan" || nextTab === "custom" ? nextTab : "realtime";
+    setActiveTab(validTab);
     const params = new URLSearchParams(searchParams.toString());
-    params.set("tab", nextTab);
+    params.set("tab", validTab);
     router.replace(`${pathname}?${params.toString()}`, { scroll: false });
   };
 
