@@ -3,22 +3,31 @@ import { Skeleton } from "@/components/ui/skeleton";
 export default function RekapLoading() {
   return (
     <div className="mx-auto w-full max-w-5xl space-y-6">
-      <div className="space-y-2">
-        <Skeleton className="h-8 w-44" />
-        <Skeleton className="h-4 w-24" />
+      {/* Header Skeleton */}
+      <div className="flex items-center justify-between">
+        <div className="space-y-2">
+          <Skeleton className="h-8 w-48" />
+          <Skeleton className="h-4 w-72" />
+        </div>
+        <Skeleton className="size-11 rounded-full" />
       </div>
 
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-        {Array.from({ length: 4 }).map((_, index) => (
-          <Skeleton key={index} className="h-24 rounded-xl" />
-        ))}
-      </div>
+      {/* Tabs Skeleton */}
+      <div className="space-y-6">
+        <div className="grid w-full grid-cols-3 gap-1 rounded-[8px] border border-hairline bg-surface-strong p-1 sm:w-80">
+          <Skeleton className="h-8 rounded-[6px]" />
+          <Skeleton className="h-8 rounded-[6px]" />
+          <Skeleton className="h-8 rounded-[6px]" />
+        </div>
 
-      <Skeleton className="h-82.5 rounded-xl" />
-
-      <div className="grid gap-6 md:grid-cols-2">
-        <Skeleton className="h-72 rounded-xl" />
-        <Skeleton className="h-72 rounded-xl" />
+        {/* Tab Content Placeholder Skeleton */}
+        <div className="rounded-card border border-hairline bg-card p-6">
+          <div className="flex flex-col items-center justify-center py-16 space-y-3">
+            <Skeleton className="h-10 w-10 rounded-full" />
+            <Skeleton className="h-4 w-32" />
+            <Skeleton className="h-3 w-64" />
+          </div>
+        </div>
       </div>
     </div>
   );

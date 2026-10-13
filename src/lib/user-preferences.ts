@@ -26,12 +26,14 @@ export type UserPreferences = {
   default_landing_page: LandingPagePreference;
   show_decimal_places: boolean;
   time_format: TimeFormatPreference;
+  cutoff_day: number;
+  akumulasi_saldo: boolean;
 };
 
 export type UserPreferenceUpdate = Partial<UserPreferences>;
 
 export const USER_PREFERENCE_SELECT =
-  "theme, currency, date_format, number_format, default_landing_page, show_decimal_places, time_format";
+  "theme, currency, date_format, number_format, default_landing_page, show_decimal_places, time_format, cutoff_day, akumulasi_saldo";
 
 export const DEFAULT_USER_PREFERENCES: UserPreferences = {
   theme: "system",
@@ -41,6 +43,8 @@ export const DEFAULT_USER_PREFERENCES: UserPreferences = {
   default_landing_page: "/transactions",
   show_decimal_places: false,
   time_format: "24h",
+  cutoff_day: 1,
+  akumulasi_saldo: false,
 };
 
 const PREFERENCE_OPTIONS = {
@@ -88,6 +92,17 @@ export function normalizeUserPreferences(
     time_format: isOneOf(input?.time_format, TIME_FORMAT_PREFERENCES)
       ? input.time_format
       : DEFAULT_USER_PREFERENCES.time_format,
+    cutoff_day:
+      typeof input?.cutoff_day === "number" &&
+      Number.isInteger(input.cutoff_day) &&
+      input.cutoff_day >= 1 &&
+      input.cutoff_day <= 31
+        ? input.cutoff_day
+        : DEFAULT_USER_PREFERENCES.cutoff_day,
+    akumulasi_saldo:
+      typeof input?.akumulasi_saldo === "boolean"
+        ? input.akumulasi_saldo
+        : DEFAULT_USER_PREFERENCES.akumulasi_saldo,
   };
 }
 
@@ -102,6 +117,8 @@ export function validateUserPreferenceUpdate(
     "default_landing_page",
     "show_decimal_places",
     "time_format",
+    "cutoff_day",
+    "akumulasi_saldo",
   ]);
   const data: UserPreferenceUpdate = {};
 
@@ -124,8 +141,37 @@ export function validateUserPreferenceUpdate(
       continue;
     }
 
-    const options = PREFERENCE_OPTIONS[key];
-    if (!isOneOf(value, options)) {
+    if (key === "akumulasi_saldo") {
+      if (typeof value !== "boolean") {
+        return {
+          success: false,
+          error: "Preferensi akumulasi saldo tidak valid",
+        };
+      }
+
+      data.akumulasi_saldo = value;
+      continue;
+    }
+
+    if (key === "cutoff_day") {
+      if (
+        typeof value !== "number" ||
+        !Number.isInteger(value) ||
+        value < 1 ||
+        value > 31
+      ) {
+        return {
+          success: false,
+          error: "Tanggal cut-off siklus harus antara 1 dan 31",
+        };
+      }
+
+      data.cutoff_day = value;
+      continue;
+    }
+
+    const options = PREFERENCE_OPTIONS[key as keyof typeof PREFERENCE_OPTIONS];
+    if (options && !isOneOf(value, options)) {
       return { success: false, error: `Nilai preferensi ${rawKey} tidak valid` };
     }
 

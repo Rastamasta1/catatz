@@ -184,7 +184,7 @@ function DetailListItem({ item }: { item: RekapDetailTransaksi }) {
               <span className="truncate">- {item.rekening.nama}</span>
             )}
             {item.catatan && (
-              <span className="min-w-0 break-words">- {item.catatan}</span>
+              <span className="min-w-0 wrap-break-word">- {item.catatan}</span>
             )}
           </div>
         </div>
@@ -267,7 +267,7 @@ function BreakdownRows({
                 type="button"
                 onClick={() => onToggle(item.id)}
                 className={cn(
-                  "flex min-h-16 w-full items-center gap-3 rounded-[12px] p-3 text-left transition-colors hover:bg-surface-soft",
+                  "flex min-h-16 w-full items-center gap-3 rounded-input p-3 text-left transition-colors hover:bg-surface-soft",
                   isActive && "bg-surface-soft",
                 )}
                 aria-expanded={isActive}

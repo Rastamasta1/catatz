@@ -133,6 +133,8 @@ function getTableRows(tableName) {
         default_landing_page: "/transactions",
         show_decimal_places: false,
         time_format: "24h",
+        cutoff_day: 1,
+        akumulasi_saldo: false,
       },
     ],
     rekening: [account],
@@ -140,6 +142,27 @@ function getTableRows(tableName) {
     transaksi: [transaction],
     hutang: [debt],
     user_sessions: [],
+    rekap_settings: [
+      {
+        id: "00000000-0000-4000-8000-000000000050",
+        user_id: userId,
+        cutoff_day: 1,
+        akumulasi_saldo: false,
+        created_at: now,
+        updated_at: now,
+      },
+    ],
+    rekap_periode_custom: [
+      {
+        id: "00000000-0000-4000-8000-000000000060",
+        user_id: userId,
+        nama: "Liburan Musim Panas",
+        tanggal_mulai: "2026-06-01",
+        tanggal_selesai: "2026-06-30",
+        created_at: now,
+        updated_at: now,
+      },
+    ],
   };
 
   return rows[tableName] ?? [];

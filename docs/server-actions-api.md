@@ -387,12 +387,53 @@ Lokasi: `src/actions/rekap-action.ts`
 | Action                                | Tujuan                                                                                                                    | Tabel                                                           |
 | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
 | `getRekapBulanan(tahun)`              | Menghitung income, expense, dan net per bulan. Transfer dan correction tidak masuk total utama.                           | `transaksi`                                                     |
-| `getRekapDetailBulanan(bulan, tahun)` | Mengambil detail bulan: selisih utama, breakdown kategori/judul, koreksi saldo, aktivitas hutang/piutang, dan sisa aktif. | `transaksi`, `kategori`, `rekening`, `hutang`, `hutang_cicilan` |
+| `getRekapDetailBulanan(bulan, tahun)` | Mengambil detail bulan (pembungkus tipis `getRekapDetailByRange`): selisih, breakdown, koreksi, dan hutang/piutang.      | `transaksi`, `kategori`, `rekening`, `hutang`, `hutang_cicilan` |
+| `getRekapDetailByRange(dari, sampai)` | Mengambil detail rekap untuk sembarang rentang tanggal `dari` s/d `sampai` (tervalidasi Zod).                              | `transaksi`, `kategori`, `rekening`, `hutang`, `hutang_cicilan` |
+| `getRekapRingkasanPeriodeList(periods)` | Mengambil ringkasan batch banyak periode dalam 1 query batch dan bucketing pure logic (income, expense, net, D8 cashflow). | `transaksi`, `hutang`, `hutang_cicilan`                         |
 | `getRekapKategori(bulan, tahun)`      | Breakdown expense per kategori untuk bulan tertentu.                                                                      | `transaksi`, `kategori`                                         |
 | `getBudgetWithUsage(bulan, tahun)`    | Mengambil budget dan menghitung pemakaian expense.                                                                        | `budget`, `transaksi`, `kategori`                               |
 | `upsertBudget(...)`                   | Membuat/mengubah budget berdasarkan unique `(user_id,kategori_id,bulan,tahun)`.                                           | `budget`                                                        |
 
 Catatan: `upsertBudget` belum terlihat dipakai oleh UI route yang ada.
+
+## Rekap Period & Settings Actions
+
+Lokasi: `src/actions/rekap-period-action.ts`
+
+Shared type & validation: `src/types/rekap.d.ts`, `src/validations/rekap-validation.ts`
+
+Tabel yang diakses: `rekap_settings`, `rekap_periode_custom`
+
+| Action | Tujuan | Input | Output | Revalidate |
+|---|---|---|---|---|
+| `getRekapSettings()` | Mengambil pengaturan cut-off dan akumulasi saldo. Mengembalikan default jika belum ada row tanpa insert. | - | `ActionResult<RekapSettings>` | - |
+| `updateRekapSettings(values)` | Menyimpan/memperbarui pengaturan siklus rekap via upsert `user_id`. | `RekapSettingsSchema` | `ActionResult<RekapSettings>` | `/reports` |
+| `listCustomPeriods()` | Mengambil daftar periode custom milik user urut `tanggal_mulai DESC`. | - | `ActionResult<CustomPeriod[]>` | - |
+| `getCustomPeriod(id)` | Mengambil detail satu periode custom milik user. | `id: string` | `ActionResult<CustomPeriod>` | - |
+| `createCustomPeriod(values)` | Membuat periode custom baru setelah validasi rentang tanggal. | `CustomPeriodSchema` | `ActionResult<CustomPeriod>` | `/reports` |
+| `updateCustomPeriod(id, values)` | Memperbarui nama atau rentang tanggal periode custom milik user. | `id: string`, `values: CustomPeriodSchema` | `ActionResult<CustomPeriod>` | `/reports` |
+| `deleteCustomPeriod(id)` | Menghapus periode custom milik user. | `id: string` | `ActionResult<{ id: string }>` | `/reports` |
+
+Catatan:
+- Semua action memeriksa autentikasi user (`auth.getUser()`) dan menyertakan filter eksplisit `.eq('user_id', user.id)` di samping proteksi RLS database.
+- Nilai `updated_at` (dan `created_at` saat create) dikelola dari application layer menggunakan ISO timestamp.
+- Error ketiadaan tabel di database (sebelum migrasi `014-rekap-periode.sql` dijalankan) ditangkap dan dikembalikan sebagai pesan ramah, bukan *unhandled throw*.
+
+## Rekap Balance Actions
+
+Lokasi: `src/actions/rekap-saldo-action.ts`
+
+Pure calculation engine: `src/lib/rekap-balance.ts`
+
+Tabel yang diakses: `rekening`, `transaksi`, `hutang`, `hutang_cicilan`
+
+| Action | Tujuan | Input | Output | Revalidate |
+|---|---|---|---|---|
+| `getSaldoPeriodeList(periods)` | Menghitung saldo awal dan saldo akhir historis per periode menggunakan metode ledger hitung mundur (Keputusan D7). | `P extends RekapSaldoPeriodInput[]` | `ActionResult<(P & PeriodSaldoResult)[]>` | - |
+
+Catatan:
+- Query database dioptimalkan hanya mengambil transaksi, hutang, dan cicilan bertanggal `> (min(startDate) - 1 hari)`.
+- Rekonsiliasi saldo akhir untuk tanggal hari ini dijamin identik dengan total `saldo_saat_ini` rekening yang disertakan (`exclude_total = false`).
 
 ## Preference Actions
 

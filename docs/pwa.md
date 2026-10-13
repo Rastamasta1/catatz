@@ -2,7 +2,7 @@
 
 ## Status
 
-Status: Diimplementasikan.
+Status: **Production (Diimplementasikan)**.
 
 CatatZ memiliki manifest, app icons, iOS metadata, install UX, service worker Serwist, offline fallback, update prompt, dan offline queue transaksi.
 

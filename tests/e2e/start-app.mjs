@@ -3,7 +3,7 @@ import { spawn } from "node:child_process";
 const npmCommand = process.platform === "win32" ? "npm.cmd" : "npm";
 const child = spawn(
   npmCommand,
-  ["run", "dev", "--", "--hostname", "127.0.0.1", "--port", "3100"],
+  ["run", "dev", "--", "--webpack", "--hostname", "127.0.0.1", "--port", "3100"],
   {
     env: {
       ...process.env,

@@ -1,0 +1,129 @@
+'use server';
+
+import { createClient } from '@/configs/supabase/server';
+import type { ActionResult } from '@/types/general';
+import { addDays } from '@/lib/rekap-period';
+import {
+  calculateSaldoForPeriods,
+  type LedgerData,
+  type PeriodSaldoResult,
+  type RekeningBalanceItem,
+  type LedgerTransaksiItem,
+  type LedgerHutangItem,
+  type LedgerCicilanItem,
+} from '@/lib/rekap-balance';
+
+export type RekapSaldoPeriodInput = {
+  startDate?: string;
+  endDate?: string;
+  dari?: string;
+  sampai?: string;
+  tanggal_mulai?: string;
+  tanggal_selesai?: string;
+  [key: string]: unknown;
+};
+
+/**
+ * Mengambil saldo awal dan saldo akhir historis untuk daftar periode
+ * menggunakan metode hitung mundur ledger (Keputusan D7).
+ *
+ * Mengoptimalkan query database dengan hanya mengambil rekaman
+ * bertanggal > (awal terlama - 1 hari).
+ */
+export async function getSaldoPeriodeList<P extends RekapSaldoPeriodInput>(
+  periods: P[],
+): Promise<ActionResult<(P & PeriodSaldoResult)[]>> {
+  try {
+    if (!Array.isArray(periods) || periods.length === 0) {
+      return { success: true, data: [] };
+    }
+
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return { success: false, error: 'Tidak terautentikasi' };
+    }
+
+    // Normalisasi periode input
+    const normalized = periods.map((p) => {
+      const startDate = String(p.startDate ?? p.dari ?? p.tanggal_mulai ?? '');
+      const endDate = String(p.endDate ?? p.sampai ?? p.tanggal_selesai ?? '');
+      return {
+        ...p,
+        startDate,
+        endDate,
+      };
+    });
+
+    // Cari tanggal awal paling lama (earliestStartDate)
+    let earliestStartDate = normalized[0].startDate;
+    for (const p of normalized) {
+      if (p.startDate && p.startDate < earliestStartDate) {
+        earliestStartDate = p.startDate;
+      }
+    }
+
+    // Hanya ambil transaksi/hutang/cicilan bertanggal > (earliestStartDate - 1 hari)
+    const cutoffDate = addDays(earliestStartDate, -1);
+
+    // 1. Ambil rekening user
+    const { data: rekeningData, error: rekeningError } = await supabase
+      .from('rekening')
+      .select('id, saldo_saat_ini, exclude_total')
+      .eq('user_id', user.id);
+
+    if (rekeningError) {
+      return { success: false, error: rekeningError.message };
+    }
+
+    // 2. Ambil transaksi, hutang, dan cicilan yang relevan (> cutoffDate)
+    const [txRes, hutangRes, cicilanRes] = await Promise.all([
+      supabase
+        .from('transaksi')
+        .select('id, tipe, nominal, tanggal, rekening_id, rekening_tujuan, tags')
+        .eq('user_id', user.id)
+        .gt('tanggal', cutoffDate),
+      supabase
+        .from('hutang')
+        .select('id, tipe, total_pinjaman, tanggal_mulai, rekening_id')
+        .eq('user_id', user.id)
+        .gt('tanggal_mulai', cutoffDate),
+      supabase
+        .from('hutang_cicilan')
+        .select(`
+          id,
+          nominal,
+          tanggal,
+          tipe_hutang_snapshot,
+          rekening_id,
+          hutang:hutang_id(tipe)
+        `)
+        .gt('tanggal', cutoffDate),
+    ]);
+
+    if (txRes.error) return { success: false, error: txRes.error.message };
+    if (hutangRes.error) return { success: false, error: hutangRes.error.message };
+    if (cicilanRes.error) return { success: false, error: cicilanRes.error.message };
+
+    const ledgerData: LedgerData = {
+      rekening: (rekeningData as unknown as RekeningBalanceItem[]) ?? [],
+      transaksi: (txRes.data as unknown as LedgerTransaksiItem[]) ?? [],
+      hutang: (hutangRes.data as unknown as LedgerHutangItem[]) ?? [],
+      cicilan: (cicilanRes.data as unknown as LedgerCicilanItem[]) ?? [],
+    };
+
+    // Hitung saldo mundur menggunakan pure engine
+    const results = calculateSaldoForPeriods(normalized, ledgerData);
+
+    return { success: true, data: results };
+  } catch (err) {
+    const message =
+      err instanceof Error
+        ? err.message
+        : 'Terjadi kesalahan saat menghitung saldo periode';
+    return { success: false, error: message };
+  }
+}

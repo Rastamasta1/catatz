@@ -304,6 +304,14 @@ Gunakan `Skeleton` untuk loading route/data yang membutuhkan waktu.
   - `currentTime`
   - `percentage`
 
+## Pola Antarmuka Rekap Keuangan (`/reports`)
+
+- **Shell Tab Navigation**: Tab utama (Realtime, Bulanan, Custom) menggunakan segmented pill `TabsList` (`rounded-full bg-surface-strong p-1`). State tab aktif disinkronkan secara optimistik ke query URL `?tab=` via `router.replace(..., { scroll: false })` sehingga navigasi balik dari halaman detail mendarat pada tab yang sama.
+- **Kartu Periode (`RekapPeriodCard`)**: Container menggunakan `rounded-card` (`rounded-[24px]`), flat default elevation dengan border `border-hairline`, serta hover state subtle (`hover:border-hairline-strong hover:bg-surface-soft/60`). Seluruh area kartu bertindak sebagai tautan `Link` dengan tap target aman ≥44px. Tombol aksi internal (seperti edit periode) wajib menggunakan `e.preventDefault()` / `e.stopPropagation()`.
+- **Floating Action Button (FAB)**: Tombol aksi melayang (misal: "Periode Baru" pada Tab Custom) berbentuk pill (`rounded-full bg-primary`) dengan tap target minimum 48px (`h-12`). Offset vertikal pada mobile wajib disesuaikan (`bottom-[calc(7.5rem+env(safe-area-inset-bottom))]`) agar tidak bertabrakan dengan tombol panduan instalasi iOS (`fixed right-4 bottom-16`) maupun `OfflineIndicator` (`fixed inset-x-3 bottom-3`).
+- **Breakdown Transaksi & Drill-Down**: Baris breakdown kategori dan judul menampilkan ikon plate, teks label dengan mitigasi truncate/overflow (`min-w-0 truncate`), nominal finansial `font-mono`, dan batang proporsi `Progress`. Interaksi drill-down menggunakan tombol aksesibel ber-atribut `aria-expanded` dengan aturan ekspansi tunggal per section (*single expanded row per section*).
+- **Warna Semantik Finansial**: Warna `text-semantic-up` (pemasukan/positif) dan `text-semantic-down` (pengeluaran/negatif) **hanya digunakan pada teks**, tidak boleh dijadikan warna latar belakang (*background*) tombol atau kartu.
+
 ## PWA dan Offline UI
 
 - Indikator offline global ada di `src/components/pwa/offline-indicator.tsx`.

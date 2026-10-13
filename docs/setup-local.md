@@ -56,10 +56,20 @@ Root `/` akan redirect ke `/transactions`. Jika belum login, proxy akan redirect
 
 ```bash
 npm run lint
+npm run typecheck
+npm run test
+npm run verify:quick
+npm run verify
 npm run build
 ```
 
-Tidak ada script `type-check` dan tidak ada script `test` di `package.json` saat dokumentasi ini dibuat.
+Script validasi yang tersedia di repository:
+- `npm run lint`: ESLint check.
+- `npm run typecheck`: TypeScript typecheck tanpa emit (`tsc --noEmit`).
+- `npm run test`: Unit test Vitest.
+- `npm run verify:quick`: Lint, typecheck, dan unit test sekaligus (wajib dijalankan sebelum commit/selesai task).
+- `npm run verify`: Verifikasi menyeluruh: quick verification, test coverage, Playwright E2E smoke test, dan production build.
+- `npm run build`: Production build dengan Serwist (`next build --webpack`).
 
 ## Supabase Local
 

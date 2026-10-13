@@ -20,10 +20,11 @@ Migration project berada di `src/migrations`.
 | `012-protect-rekening-delete-references.sql` | Menambah trigger untuk menolak delete rekening yang masih direferensikan transaksi, hutang/piutang, cicilan, atau template transaksi berulang. | Active |
 | `013-extend-user-preferences-formatting.sql` | Menambah preferensi `show_decimal_places` dan `time_format` pada `user_preferences`. | Active |
 | `014-fix-default-landing-page-values.sql` | Mengubah nilai default column `default_landing_page` ke `/transactions` dan memigrasikan nilai landing page lama ke nama route baru. | Active |
+| `014-rekap-periode.sql` | Menambahkan kolom `cutoff_day` dan `akumulasi_saldo` ke `user_preferences`, serta membuat table `rekap_periode_custom`, RLS, index, dan grant API untuk periode custom rekap. | Active |
 
 ## Catatan Urutan
 
-File migration yang ada saat ini berurutan dari `001` sampai `014` di `src/migrations`.
+File migration yang ada saat ini berurutan dari `001` sampai `014` di `src/migrations`. Migration `014-rekap-periode.sql` memperluas kolom `user_preferences` dan menambahkan tabel periode custom rekap secara idempotent.
 
 Jangan menjalankan migration otomatis hanya berdasarkan asumsi nomor file tanpa review. Pastikan urutan eksekusi sesuai riwayat production/staging yang sebenarnya.
 

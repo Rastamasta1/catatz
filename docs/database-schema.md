@@ -237,6 +237,8 @@ Deskripsi: preferensi tampilan dan format data milik user.
 | `default_landing_page` | `text` | Yes | `'/transactions'` | Route awal setelah login. |
 | `show_decimal_places` | `boolean` | No | `false` | Jika true, nominal penuh tampil dengan 2 digit desimal. |
 | `time_format` | `text` | No | `'24h'` | Format waktu tampilan/input, `24h` atau `12h`. |
+| `cutoff_day` | `smallint` | No | `1` | Tanggal cut-off siklus rekap bulanan (1–31). |
+| `akumulasi_saldo` | `boolean` | No | `false` | Menentukan apakah saldo awal siklus mengakumulasi saldo berjalan sebelumnya. |
 | `created_at` | `timestamptz` | Yes | `now()` | Waktu dibuat. |
 | `updated_at` | `timestamptz` | Yes | `now()` | Waktu terakhir diubah dari application layer. |
 
@@ -244,6 +246,7 @@ Constraints/index:
 
 - Unique `user_id`.
 - Check `chk_user_preferences_time_format`: `time_format IN ('24h', '12h')`.
+- Check `chk_user_preferences_cutoff_day`: `cutoff_day BETWEEN 1 AND 31`.
 - Index `idx_user_preferences_user_id` pada `user_id`.
 
 ## Tabel `user_sessions`
@@ -272,6 +275,28 @@ Indexes:
 - `idx_user_sessions_device_id` pada `device_id`.
 - `idx_user_sessions_revoked_at` pada `revoked_at`.
 - `idx_user_sessions_last_active_at` pada `last_active_at DESC`.
+
+## Tabel `rekap_periode_custom`
+
+Deskripsi: Periode custom rentang tanggal untuk rekapitulasi keuangan yang dibuat oleh pengguna.
+
+| Column | Type | Nullable | Default | Description |
+|---|---|---:|---|---|
+| `id` | `uuid` | No | `gen_random_uuid()` | Primary key. |
+| `user_id` | `uuid` | No | - | FK ke `profiles(id)` dengan `ON DELETE CASCADE`. |
+| `nama` | `text` | No | - | Nama periode custom (1..100 karakter non-kosong). |
+| `tanggal_mulai` | `date` | No | - | Tanggal awal periode rekap. |
+| `tanggal_selesai` | `date` | No | - | Tanggal akhir periode rekap. |
+| `created_at` | `timestamptz` | Yes | `now()` | Waktu dibuat. |
+| `updated_at` | `timestamptz` | Yes | `now()` | Waktu terakhir diubah dari application layer. |
+
+Constraints/index:
+
+- Check `char_length(trim(nama)) >= 1 AND char_length(nama) <= 100`.
+- Check `chk_rekap_periode_custom_tanggal`: `tanggal_selesai >= tanggal_mulai`.
+- Index `idx_rekap_periode_custom_user_tanggal` pada `(user_id, tanggal_mulai DESC)`.
+
+Catatan: Kolom `updated_at` dikelola oleh application layer tanpa trigger database.
 
 ## Storage Bucket `avatars`
 
@@ -307,6 +332,7 @@ Policy storage:
 - `recurring_transaksi.rekening_tujuan` -> `rekening.id`.
 - `user_preferences.user_id` -> `profiles.id`.
 - `user_sessions.user_id` -> `profiles.id`.
+- `rekap_periode_custom.user_id` -> `profiles.id`.
 
 ## Business Rule Database
 
