@@ -273,6 +273,49 @@ Indexes:
 - `idx_user_sessions_revoked_at` pada `revoked_at`.
 - `idx_user_sessions_last_active_at` pada `last_active_at DESC`.
 
+## Tabel `rekap_settings`
+
+Deskripsi: Pengaturan siklus rekap bulanan (tanggal cut-off) dan preferensi akumulasi saldo per pengguna.
+
+| Column | Type | Nullable | Default | Description |
+|---|---|---:|---|---|
+| `id` | `uuid` | No | `gen_random_uuid()` | Primary key. |
+| `user_id` | `uuid` | No | - | FK ke `profiles(id)` dengan `ON DELETE CASCADE`, unique per user. |
+| `cutoff_day` | `smallint` | No | `1` | Tanggal cut-off siklus bulanan (1–31). |
+| `akumulasi_saldo` | `boolean` | No | `false` | Menentukan apakah saldo awal siklus mengakumulasi saldo berjalan sebelumnya. |
+| `created_at` | `timestamptz` | Yes | `now()` | Waktu dibuat. |
+| `updated_at` | `timestamptz` | Yes | `now()` | Waktu terakhir diubah dari application layer. |
+
+Constraints/index:
+
+- Unique `user_id`.
+- Check: `cutoff_day BETWEEN 1 AND 31`.
+- Index `idx_rekap_settings_user_id` pada `user_id`.
+
+Catatan: Kolom `updated_at` dikelola oleh application layer tanpa trigger database.
+
+## Tabel `rekap_periode_custom`
+
+Deskripsi: Periode custom rentang tanggal untuk rekapitulasi keuangan yang dibuat oleh pengguna.
+
+| Column | Type | Nullable | Default | Description |
+|---|---|---:|---|---|
+| `id` | `uuid` | No | `gen_random_uuid()` | Primary key. |
+| `user_id` | `uuid` | No | - | FK ke `profiles(id)` dengan `ON DELETE CASCADE`. |
+| `nama` | `text` | No | - | Nama periode custom (1..100 karakter non-kosong). |
+| `tanggal_mulai` | `date` | No | - | Tanggal awal periode rekap. |
+| `tanggal_selesai` | `date` | No | - | Tanggal akhir periode rekap. |
+| `created_at` | `timestamptz` | Yes | `now()` | Waktu dibuat. |
+| `updated_at` | `timestamptz` | Yes | `now()` | Waktu terakhir diubah dari application layer. |
+
+Constraints/index:
+
+- Check `char_length(trim(nama)) >= 1 AND char_length(nama) <= 100`.
+- Check `chk_rekap_periode_custom_tanggal`: `tanggal_selesai >= tanggal_mulai`.
+- Index `idx_rekap_periode_custom_user_tanggal` pada `(user_id, tanggal_mulai DESC)`.
+
+Catatan: Kolom `updated_at` dikelola oleh application layer tanpa trigger database.
+
 ## Storage Bucket `avatars`
 
 Migration `008-avatars-storage.sql` membuat bucket:
@@ -307,6 +350,8 @@ Policy storage:
 - `recurring_transaksi.rekening_tujuan` -> `rekening.id`.
 - `user_preferences.user_id` -> `profiles.id`.
 - `user_sessions.user_id` -> `profiles.id`.
+- `rekap_settings.user_id` -> `profiles.id`.
+- `rekap_periode_custom.user_id` -> `profiles.id`.
 
 ## Business Rule Database
 

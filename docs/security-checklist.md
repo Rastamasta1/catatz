@@ -73,6 +73,7 @@ Security headers saat ini:
 - `hutang_cicilan` memiliki policy UPDATE via parent `hutang`; pastikan edit cicilan tetap hanya dilakukan untuk row milik user.
 - Delete rekening diproteksi di Server Action dan trigger database agar transaksi, hutang/piutang, cicilan, atau template berulang tidak kehilangan referensi rekening.
 - Kolom formatting baru di `user_preferences` (`show_decimal_places`, `time_format`) tetap berada di table user-owned yang dibatasi RLS `auth.uid() = user_id`.
+- Tabel baru `rekap_settings` dan `rekap_periode_custom` (migration `014-rekap-periode.sql`) dilindungi RLS penuh dengan `(select auth.uid()) = user_id`, grant API dibatasi hanya untuk role `authenticated` (tanpa akses `anon`), dan tanpa `SECURITY DEFINER` maupun trigger database (`updated_at` dikelola di application layer).
 - Bucket `avatars` public read. Ini cocok untuk avatar, tetapi tidak cocok untuk dokumen privat.
 - Bukti transaksi Auto Fill diproses sementara di memory request dan tidak menggunakan bucket `avatars` atau bucket public lain.
 - `kategori` memberi SELECT kepada `anon`; RLS hanya memperbolehkan kategori system untuk anon karena `auth.uid()` null tidak cocok dengan kategori user.
