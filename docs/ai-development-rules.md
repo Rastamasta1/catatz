@@ -1,5 +1,17 @@
 # AI Development Rules
 
+## Production Environment & Safety Mandate
+
+> **STATUS APLIKASI: PRODUCTION (LIVE)**
+>
+> CatatZ adalah aplikasi yang telah aktif berjalan di tahap **production**. Semua AI agent (Codex, Claude, Gemini, dsb.) wajib beroperasi dengan standar kehati-hatian production:
+>
+> 1. **Data Finansial Nyata**: Logika transaksi, rekening, dan hutang/piutang memproses data uang asli pengguna. Tidak ada toleransi untuk perubahan logika yang merusak integritas saldo atau cascade data tanpa verifikasi.
+> 2. **Immutabilitas Migration**: File migration `src/migrations/` (`001` s/d `014`) merupakan riwayat production yang immutable. Jangan pernah memodifikasi migration lama. Perubahan schema hanya boleh melalui migration baru yang bersifat additive.
+> 3. **Backward Compatibility**: Routing, Server Actions, auth sessions, dan RLS policies tidak boleh dirusak tanpa rencana migrasi dan kompatibilitas yang teruji.
+> 4. **Proteksi Secret**: Dilarang mengekspos token, API key, service role key, atau credential apapun. `AI_API_KEY` harus selalu di server-side.
+> 5. **Verifikasi Wajib**: Setiap task wajib divalidasi dengan `npm run verify:quick` sebelum dianggap selesai.
+
 ## General Rules
 
 - Selalu analisa file terkait sebelum mengubah kode.

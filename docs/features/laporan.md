@@ -2,7 +2,7 @@
 
 ## Status
 
-Status: Aktif untuk rekap dan export PDF/XLSX/CSV. Budget usage tampil jika data budget tersedia.
+Status: **Production (Aktif)** untuk rekap dan export PDF/XLSX/CSV. Budget usage tampil jika data budget tersedia.
 
 ## Deskripsi
 

@@ -2,7 +2,7 @@
 
 ## Status
 
-Status: Aktif untuk email/password login/register, reset password email, Google OAuth, dan Google Link Identity dari Settings.
+Status: **Production (Aktif)** untuk email/password login/register, reset password email, Google OAuth, dan Google Link Identity dari Settings.
 
 ## Route
 

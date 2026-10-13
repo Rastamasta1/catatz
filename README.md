@@ -84,7 +84,7 @@ Mulai dari:
 
 ## Status Project
 
-Status: aktif dikembangkan. Dokumentasi ini mengikuti kondisi repository saat ini dan perlu ikut diperbarui setiap ada perubahan fitur, database, auth, environment variable, deployment, security, atau struktur folder.
+Status: **Production (Live)**. CatatZ sudah aktif beroperasi di tahap production dan berjalan live. Semua perubahan kode wajib menjaga stabilitas, backward compatibility, keamanan data finansial, serta kepatuhan terhadap aturan arsitektur & desain yang ada. Dokumentasi ini mengikuti kondisi repository saat ini dan wajib ikut diperbarui setiap ada perubahan fitur, database, auth, environment variable, deployment, security, atau struktur folder.
 
 ## Lisensi
 

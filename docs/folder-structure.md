@@ -117,6 +117,6 @@ Tidak ada folder `src/app/api` pada kondisi repo saat ini.
 
 - Project memakai `src/proxy.ts`, bukan `middleware.ts`.
 - Migration SQL berada di `src/migrations`, bukan folder `supabase/migrations`.
-- Root `AGENTS.md` menjadi operating instructions untuk Codex dan merujuk ke `docs/ai-development-rules.md`.
-- `CLAUDE.md` mendelegasikan instruksi repository ke `AGENTS.md`; skill Claude hanya wrapper ke `.agents/skills`.
-- File `env-example` masih ada sebagai contoh lama. `.env.example` menjadi contoh env yang lebih konvensional untuk dokumentasi baru.
+- Root `AGENTS.md` menjadi operating instructions repository-level untuk agent dan merujuk ke `docs/ai-development-rules.md`.
+- `CLAUDE.md` dan `GEMINI.md` mendelegasikan instruksi repository ke `AGENTS.md`.
+- `.env.example` adalah template environment variable aman tanpa memuat nilai secret riil.
