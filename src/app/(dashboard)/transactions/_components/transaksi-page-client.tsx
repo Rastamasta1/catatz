@@ -92,6 +92,21 @@ export default function TransaksiPageClient({
     });
 
   useEffect(() => {
+    const rekParam = searchParams.get("rekening_id");
+    if (rekParam) {
+      setFilter((prev) => {
+        if (prev.rekening_id?.length === 1 && prev.rekening_id[0] === rekParam) {
+          return prev;
+        }
+        return {
+          ...prev,
+          rekening_id: [rekParam],
+        };
+      });
+    }
+  }, [searchParams, setFilter]);
+
+  useEffect(() => {
     if (searchParams.get("new") !== "true") {
       return;
     }

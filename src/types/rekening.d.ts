@@ -25,11 +25,16 @@ export type RekeningFormValues = {
 };
 
 export type RekeningUsageCounts = {
-  transaksi_asal: number;
-  transaksi_tujuan: number;
+  transaksi_masuk: number;
+  transaksi_keluar: number;
+  transfer_keluar: number;
+  transfer_masuk: number;
+  koreksi_saldo: number;
   hutang: number;
   hutang_cicilan: number;
   recurring_asal: number;
   recurring_tujuan: number;
+  transaksi_asal: number;
+  transaksi_tujuan: number;
   total: number;
 };
