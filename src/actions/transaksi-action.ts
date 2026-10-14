@@ -20,11 +20,12 @@ function validateTransaksiValues(values: TransaksiFormValues): ActionResult<Tran
 }
 
 function toTransaksiPayload(values: TransaksiFormValues) {
+  const isTransferOrCorrection = values.tipe === 'transfer' || values.tipe === 'correction';
   return {
     ...values,
-    judul: values.judul?.trim() || null,
-    kategori_id: values.kategori_id ?? null,
-    rekening_tujuan: values.rekening_tujuan ?? null,
+    judul: isTransferOrCorrection ? null : (values.judul?.trim() || null),
+    kategori_id: isTransferOrCorrection ? null : (values.kategori_id ?? null),
+    rekening_tujuan: values.tipe === 'transfer' ? (values.rekening_tujuan ?? null) : null,
     waktu: values.waktu === '' ? null : values.waktu,
     catatan: values.catatan === '' ? null : values.catatan,
   };
@@ -156,21 +157,31 @@ export async function updateTransaksi(
     return { success: false, error: 'Transaksi tidak ditemukan' };
   }
 
+  const nextTipe = (values.tipe ?? oldTrx.tipe) as TransaksiFormValues['tipe'];
+  const isTransferOrCorrection = nextTipe === 'transfer' || nextTipe === 'correction';
+
   const mergedValues: TransaksiFormValues = {
-    tipe: (values.tipe ?? oldTrx.tipe) as TransaksiFormValues['tipe'],
-    judul: values.judul !== undefined ? values.judul : (oldTrx.judul ?? null),
+    tipe: nextTipe,
+    judul: isTransferOrCorrection
+      ? null
+      : values.judul !== undefined
+        ? values.judul
+        : (oldTrx.judul ?? null),
     nominal: Number(values.nominal ?? oldTrx.nominal),
     tanggal: values.tanggal ?? oldTrx.tanggal,
     waktu: values.waktu !== undefined ? values.waktu : (oldTrx.waktu ?? undefined),
-    kategori_id:
-      values.kategori_id !== undefined
+    kategori_id: isTransferOrCorrection
+      ? undefined
+      : values.kategori_id !== undefined
         ? values.kategori_id
         : (oldTrx.kategori_id ?? undefined),
     rekening_id: values.rekening_id ?? oldTrx.rekening_id ?? '',
     rekening_tujuan:
-      values.rekening_tujuan !== undefined
-        ? values.rekening_tujuan
-        : (oldTrx.rekening_tujuan ?? undefined),
+      nextTipe === 'transfer'
+        ? (values.rekening_tujuan !== undefined
+            ? values.rekening_tujuan
+            : (oldTrx.rekening_tujuan ?? undefined))
+        : undefined,
     catatan:
       values.catatan !== undefined ? values.catatan : (oldTrx.catatan ?? undefined),
     tags: values.tags ?? oldTrx.tags ?? [],

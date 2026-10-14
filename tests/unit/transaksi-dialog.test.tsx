@@ -2,6 +2,7 @@ import { cleanup, render, screen, waitFor, fireEvent } from "@testing-library/re
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import TransaksiDialog from "@/app/(dashboard)/transactions/_components/transaksi-dialog";
+import { transaksiSchema } from "@/validations/transaksi-validation";
 import type { Transaksi, Kategori } from "@/types/transaksi";
 import type { Rekening } from "@/types/rekening";
 
@@ -591,4 +592,55 @@ describe("TransaksiDialog", () => {
       expect(mockCreateTransaksi).not.toHaveBeenCalled();
     });
   });
+
+  describe("transfer and correction category clearing", () => {
+    it("validates that transfer cannot have kategori_id in schema", () => {
+      const invalidTransfer = {
+        tipe: "transfer" as const,
+        nominal: 50000,
+        tanggal: "2026-10-14",
+        rekening_id: "a0000000-0000-4000-8000-000000000001",
+        rekening_tujuan: "a0000000-0000-4000-8000-000000000002",
+        kategori_id: "b0000000-0000-4000-8000-000000000001",
+      };
+
+      const result = transaksiSchema.safeParse(invalidTransfer);
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        const paths = result.error.issues.map((i) => i.path.join("."));
+        expect(paths).toContain("kategori_id");
+      }
+    });
+
+    it("validates that correction cannot have kategori_id in schema", () => {
+      const invalidCorrection = {
+        tipe: "correction" as const,
+        nominal: 20000,
+        tanggal: "2026-10-14",
+        rekening_id: "a0000000-0000-4000-8000-000000000001",
+        kategori_id: "b0000000-0000-4000-8000-000000000001",
+      };
+
+      const result = transaksiSchema.safeParse(invalidCorrection);
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        const paths = result.error.issues.map((i) => i.path.join("."));
+        expect(paths).toContain("kategori_id");
+      }
+    });
+
+    it("accepts valid transfer when kategori_id and judul are omitted", () => {
+      const validTransfer = {
+        tipe: "transfer" as const,
+        nominal: 50000,
+        tanggal: "2026-10-14",
+        rekening_id: "a0000000-0000-4000-8000-000000000001",
+        rekening_tujuan: "a0000000-0000-4000-8000-000000000002",
+      };
+
+      const result = transaksiSchema.safeParse(validTransfer);
+      expect(result.success).toBe(true);
+    });
+  });
 });
+

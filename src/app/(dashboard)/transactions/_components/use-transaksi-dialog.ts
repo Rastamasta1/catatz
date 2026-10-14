@@ -275,10 +275,19 @@ export function useTransaksiDialog({
   async function onSubmit(values: TransaksiSchema) {
     setSubmitting(true);
     try {
+      const isTransferOrCorrection =
+        values.tipe === "transfer" || values.tipe === "correction";
+      const sanitizedValues: TransaksiSchema = {
+        ...values,
+        judul: isTransferOrCorrection ? null : (values.judul ?? null),
+        kategori_id: isTransferOrCorrection ? undefined : values.kategori_id,
+        rekening_tujuan: values.tipe === "transfer" ? values.rekening_tujuan : undefined,
+      };
+
       if (!navigator.onLine) {
         const queuedAction = await addToQueue({
           type: isEdit ? "UPDATE_TRANSAKSI" : "CREATE_TRANSAKSI",
-          payload: isEdit ? { id: editData!.id, values } : values,
+          payload: isEdit ? { id: editData!.id, values: sanitizedValues } : sanitizedValues,
         });
 
         if (queuedAction) {
@@ -295,7 +304,7 @@ export function useTransaksiDialog({
       }
 
       if (isEdit) {
-        const res = await updateTransaksi(editData!.id, values);
+        const res = await updateTransaksi(editData!.id, sanitizedValues);
         if (res.success && res.data) {
           toast.success("Transaksi diperbarui");
           onUpdated(res.data);
@@ -303,7 +312,7 @@ export function useTransaksiDialog({
           toast.error(res.error ?? "Gagal memperbarui");
         }
       } else {
-        const res = await createTransaksi(values);
+        const res = await createTransaksi(sanitizedValues);
         if (res.success && res.data) {
           toast.success(
             copyFrom ? "Transaksi berhasil di-copy!" : "Transaksi disimpan",
