@@ -29,9 +29,8 @@ Berjalan pada setiap **pull request** dan setiap **push ke branch `main` atau `d
 | Job | Langkah |
 |-----|---------|
 | `quality` | `npm ci` → lint → typecheck → test:coverage → build |
-| `e2e` | `npm ci` → install Playwright → test:e2e → upload report artifact |
 
-Jika salah satu job gagal, merge ke branch utama diblokir.
+Jika job gagal, merge ke branch utama diblokir.
 
 ---
 

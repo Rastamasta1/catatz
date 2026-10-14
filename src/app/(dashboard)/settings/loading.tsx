@@ -15,7 +15,7 @@ export default function SettingsLoading() {
       <div className="flex flex-col gap-6 md:flex-row md:gap-8">
         {/* Sidebar Nav (Desktop) */}
         <div className="hidden md:flex md:flex-col md:w-48 md:shrink-0 gap-0.5">
-          <div className="flex items-center h-9 px-3 py-2 pl-[calc(0.75rem-2px)] border-l-2 border-primary/20">
+          <div className="flex items-center h-9 px-3 py-2 pl-2.5 border-l-2 border-primary/20">
             <Skeleton className="h-4 w-20" />
           </div>
           <div className="flex items-center h-9 px-3 py-2 pl-3">

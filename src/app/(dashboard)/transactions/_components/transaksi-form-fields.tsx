@@ -1,0 +1,351 @@
+import { Controller } from "react-hook-form";
+import type {
+  Control,
+  UseFormRegister,
+  UseFormSetValue,
+  FieldErrors,
+} from "react-hook-form";
+import type { TransaksiSchema } from "@/validations/transaksi-validation";
+import type { Rekening } from "@/types/rekening";
+import type { Kategori, JudulSuggestion } from "@/types/transaksi";
+import { Input } from "@/components/ui/input";
+import { ClearableInput } from "@/components/common/clearable-input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { NominalInput } from "@/components/common/nominal-input";
+import { RekeningSelect } from "@/components/common/rekening-select";
+import { useSystemPreferences } from "@/providers/system-preference-provider";
+import { cn } from "@/lib/utils";
+
+// ─────────────────────────────────────────────
+// 1. Tanggal & Waktu Fields
+// ─────────────────────────────────────────────
+type DateTimeFieldsProps = {
+  register: UseFormRegister<TransaksiSchema>;
+  control: Control<TransaksiSchema>;
+  errors: FieldErrors<TransaksiSchema>;
+};
+
+export function TransaksiDateTimeFields({
+  register,
+  control,
+  errors,
+}: DateTimeFieldsProps) {
+  return (
+    <div className="grid grid-cols-[3fr_1fr] gap-4">
+      <div className="flex-1 space-y-1.5 min-w-0">
+        <Label htmlFor="tanggal">Tanggal</Label>
+        <Input
+          id="tanggal"
+          type="date"
+          {...register("tanggal")}
+          className="w-full appearance-none bg-background border-input"
+        />
+        {errors.tanggal && (
+          <p className="text-xs text-rose-500 mt-1">{errors.tanggal.message}</p>
+        )}
+      </div>
+      <div className="space-y-1.5">
+        <Label htmlFor="waktu">Waktu</Label>
+        <Controller
+          control={control}
+          name="waktu"
+          render={({ field }) => (
+            <Input
+              id="waktu"
+              type="time"
+              value={field.value ?? ""}
+              onChange={field.onChange}
+              className="w-full appearance-none bg-background border-input px-2 sm:px-4"
+            />
+          )}
+        />
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
+// 2. Rekening Fields (Asal & Tujuan / Correction)
+// ─────────────────────────────────────────────
+type RekeningFieldsProps = {
+  control: Control<TransaksiSchema>;
+  errors: FieldErrors<TransaksiSchema>;
+  tipe: TransaksiSchema["tipe"];
+  isCorrection: boolean;
+  rekening: Rekening[];
+  correctionRekening: Rekening | null;
+};
+
+export function TransaksiRekeningFields({
+  control,
+  errors,
+  tipe,
+  isCorrection,
+  rekening,
+  correctionRekening,
+}: RekeningFieldsProps) {
+  const { formatRupiah } = useSystemPreferences();
+
+  return (
+    <>
+      <div className="space-y-1.5">
+        <Label>Rekening {tipe === "transfer" ? "Asal" : ""}</Label>
+        {isCorrection ? (
+          <div className="flex items-center gap-2 h-10 px-3 rounded-md border bg-muted/50 text-sm">
+            {correctionRekening && (
+              <span
+                className="w-2.5 h-2.5 rounded-full shrink-0"
+                style={{ background: correctionRekening.warna }}
+              />
+            )}
+            <span className="font-medium">
+              {correctionRekening?.nama ?? "—"}
+            </span>
+            <span className="text-muted-foreground text-xs">
+              ({correctionRekening?.jenis})
+            </span>
+            <span className="ml-auto font-mono text-xs text-muted-foreground">
+              {formatRupiah(correctionRekening?.saldo_saat_ini ?? 0)}
+            </span>
+          </div>
+        ) : (
+          <Controller
+            control={control}
+            name="rekening_id"
+            render={({ field }) => (
+              <RekeningSelect
+                rekening={rekening}
+                value={field.value || ""}
+                onValueChange={field.onChange}
+                placeholder="Pilih rekening"
+                id="rekening-select"
+                className={errors.rekening_id ? "border-rose-500" : ""}
+              />
+            )}
+          />
+        )}
+        {errors.rekening_id && (
+          <p className="text-xs text-rose-500">{errors.rekening_id.message}</p>
+        )}
+      </div>
+
+      {tipe === "transfer" && (
+        <div className="space-y-1.5">
+          <Label>Rekening Tujuan</Label>
+          <Controller
+            control={control}
+            name="rekening_tujuan"
+            render={({ field }) => (
+              <RekeningSelect
+                rekening={rekening}
+                value={field.value || ""}
+                onValueChange={field.onChange}
+                placeholder="Pilih rekening tujuan"
+                id="rekening-tujuan-select"
+                className={errors.rekening_tujuan ? "border-rose-500" : ""}
+              />
+            )}
+          />
+          {errors.rekening_tujuan && (
+            <p className="text-xs text-rose-500">
+              {errors.rekening_tujuan.message}
+            </p>
+          )}
+        </div>
+      )}
+    </>
+  );
+}
+
+// ─────────────────────────────────────────────
+// 3. Nominal Field
+// ─────────────────────────────────────────────
+type NominalFieldProps = {
+  control: Control<TransaksiSchema>;
+  errors: FieldErrors<TransaksiSchema>;
+};
+
+export function TransaksiNominalField({
+  control,
+  errors,
+}: NominalFieldProps) {
+  return (
+    <div className="space-y-1.5">
+      <Label htmlFor="nominal">Nominal (Rp)</Label>
+      <Controller
+        control={control}
+        name="nominal"
+        render={({ field }) => (
+          <NominalInput
+            id="nominal"
+            placeholder="0"
+            value={field.value || ""}
+            onValueChange={field.onChange}
+            className={cn(
+              "font-mono text-lg font-semibold",
+              errors.nominal && "border-rose-500",
+            )}
+          />
+        )}
+      />
+      {errors.nominal && (
+        <p className="text-xs text-rose-500">{errors.nominal.message}</p>
+      )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
+// 4. Judul & Suggestion Field
+// ─────────────────────────────────────────────
+type JudulFieldProps = {
+  register: UseFormRegister<TransaksiSchema>;
+  setValue: UseFormSetValue<TransaksiSchema>;
+  errors: FieldErrors<TransaksiSchema>;
+  judul?: string | null;
+  suggestions: JudulSuggestion[];
+  kategori: Kategori[];
+  onSelectSuggestion: (s: JudulSuggestion) => void;
+};
+
+export function TransaksiJudulField({
+  register,
+  setValue,
+  errors,
+  judul,
+  suggestions,
+  kategori,
+  onSelectSuggestion,
+}: JudulFieldProps) {
+  const { onChange, ...registerProps } = register("judul");
+
+  return (
+    <div className="space-y-1.5">
+      <Label htmlFor="judul">Judul</Label>
+      <ClearableInput
+        id="judul"
+        placeholder="Nama transaksi, misal: Gaji Bulanan, Kopi Starb..."
+        autoComplete="off"
+        value={judul ?? ""}
+        {...registerProps}
+        onChange={(e) => {
+          onChange(e);
+          setValue("judul", e.target.value);
+        }}
+        onClear={() => setValue("judul", "")}
+      />
+      {errors.judul && (
+        <p className="text-xs text-rose-500">{errors.judul.message}</p>
+      )}
+      {suggestions.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 pt-1">
+          {suggestions.map((s, idx) => (
+            <button
+              key={idx}
+              type="button"
+              onClick={() => onSelectSuggestion(s)}
+              className={cn(
+                "inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium",
+                "border border-border bg-muted/50 hover:bg-muted hover:border-primary",
+                "transition-all duration-150 cursor-pointer",
+                judul === s.judul &&
+                  "border-primary bg-primary/5 dark:bg-primary/10 text-primary",
+              )}
+            >
+              {s.kategori_id && (
+                <span className="text-[10px]">
+                  {kategori.find((k) => k.id === s.kategori_id)?.ikon}
+                </span>
+              )}
+              {s.judul}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
+// 5. Kategori Select Field
+// ─────────────────────────────────────────────
+type KategoriFieldProps = {
+  control: Control<TransaksiSchema>;
+  errors: FieldErrors<TransaksiSchema>;
+  kategoriList: Kategori[];
+};
+
+export function TransaksiKategoriField({
+  control,
+  errors,
+  kategoriList,
+}: KategoriFieldProps) {
+  return (
+    <div className="space-y-1.5">
+      <Label>Kategori</Label>
+      <Controller
+        control={control}
+        name="kategori_id"
+        render={({ field }) => (
+          <Select value={field.value || ""} onValueChange={field.onChange}>
+            <SelectTrigger
+              id="kategori-select"
+              className={errors.kategori_id ? "border-rose-500" : ""}
+            >
+              <SelectValue placeholder="Pilih kategori" />
+            </SelectTrigger>
+            <SelectContent>
+              {kategoriList.map((k) => (
+                <SelectItem key={k.id} value={k.id}>
+                  {k.ikon} {k.nama}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+      />
+      {errors.kategori_id && (
+        <p className="text-xs text-rose-500">{errors.kategori_id.message}</p>
+      )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
+// 6. Catatan Field
+// ─────────────────────────────────────────────
+type CatatanFieldProps = {
+  register: UseFormRegister<TransaksiSchema>;
+  setValue: UseFormSetValue<TransaksiSchema>;
+  isCorrection: boolean;
+};
+
+export function TransaksiCatatanField({
+  register,
+  setValue,
+  isCorrection,
+}: CatatanFieldProps) {
+  return (
+    <div className="space-y-1.5">
+      <Label htmlFor="catatan">Catatan</Label>
+      <ClearableInput
+        id="catatan"
+        placeholder={
+          isCorrection
+            ? "Alasan koreksi saldo (opsional)..."
+            : "Keterangan tambahan..."
+        }
+        autoComplete="off"
+        {...register("catatan")}
+        onClear={() => setValue("catatan", "")}
+      />
+    </div>
+  );
+}

@@ -166,7 +166,7 @@ export function ExportSection() {
             <Button
               onClick={() => handleExport("pdf")}
               disabled={loadingFormat !== null}
-              className="min-w-[130px] flex-1 gap-2 rounded-full h-11 whitespace-nowrap sm:flex-none"
+              className="min-w-32.5 flex-1 gap-2 rounded-full h-11 whitespace-nowrap sm:flex-none"
             >
               {loadingFormat === "pdf" ? (
                 <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
@@ -179,7 +179,7 @@ export function ExportSection() {
               variant="secondary"
               onClick={() => handleExport("xlsx")}
               disabled={loadingFormat !== null}
-              className="min-w-[130px] flex-1 gap-2 rounded-full h-11 whitespace-nowrap sm:flex-none"
+              className="min-w-32.5 flex-1 gap-2 rounded-full h-11 whitespace-nowrap sm:flex-none"
             >
               {loadingFormat === "xlsx" ? (
                 <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
@@ -192,7 +192,7 @@ export function ExportSection() {
               variant="secondary"
               onClick={() => handleExport("csv")}
               disabled={loadingFormat !== null}
-              className="min-w-[130px] flex-1 gap-2 rounded-full h-11 whitespace-nowrap sm:flex-none"
+              className="min-w-32.5 flex-1 gap-2 rounded-full h-11 whitespace-nowrap sm:flex-none"
             >
               {loadingFormat === "csv" ? (
                 <Loader2 className="h-4 w-4 shrink-0 animate-spin" />

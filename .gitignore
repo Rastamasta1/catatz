@@ -12,15 +12,12 @@
 
 # testing
 /coverage
-/playwright-report/
-/test-results/
 
 # ECC runtime metadata (local-only)
 /.ecc/runtime/
 
 # next.js
 /.next/
-/.next-e2e/
 /out/
 
 # production

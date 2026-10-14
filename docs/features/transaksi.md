@@ -19,6 +19,12 @@ Fitur transaksi digunakan untuk mencatat pemasukan, pengeluaran, transfer antar 
 - Loading: `src/app/(dashboard)/transactions/loading.tsx`
 - Client page: `src/app/(dashboard)/transactions/_components/transaksi-page-client.tsx`
 - Dialog: `src/app/(dashboard)/transactions/_components/transaksi-dialog.tsx`
+- Dialog Hook: `src/app/(dashboard)/transactions/_components/use-transaksi-dialog.ts`
+- Dialog Header: `src/app/(dashboard)/transactions/_components/transaksi-dialog-header.tsx`
+- Dialog AI Section: `src/app/(dashboard)/transactions/_components/transaksi-ai-section.tsx`
+- Dialog Tipe Tabs: `src/app/(dashboard)/transactions/_components/transaksi-tipe-tabs.tsx`
+- Dialog Form Fields: `src/app/(dashboard)/transactions/_components/transaksi-form-fields.tsx`
+- Dialog Footer: `src/app/(dashboard)/transactions/_components/transaksi-dialog-footer.tsx`
 - Voice button: `src/app/(dashboard)/transactions/_components/voice-input-button.tsx`
 - File Auto Fill button: `src/app/(dashboard)/transactions/_components/transaction-file-auto-fill-button.tsx`
 - Actions: `src/actions/transaksi-action.ts`

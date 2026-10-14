@@ -56,7 +56,6 @@ npm run lint
 npm run typecheck
 npm run test
 npm run test:coverage
-npm run test:e2e
 npm run verify:quick
 npm run verify
 npm run build

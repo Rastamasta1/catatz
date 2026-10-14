@@ -81,6 +81,19 @@ export const transaksiSchema = z
       message: "Transaksi koreksi & transfer tidak boleh memiliki judul",
       path: ["judul"],
     },
+  )
+  .refine(
+    (data) => {
+      // Transaksi correction & transfer tidak boleh memiliki kategori
+      if (data.tipe === "correction" || data.tipe === "transfer") {
+        return !data.kategori_id;
+      }
+      return true;
+    },
+    {
+      message: "Transaksi transfer & koreksi tidak boleh memiliki kategori",
+      path: ["kategori_id"],
+    },
   );
 
 export type TransaksiSchema = z.infer<typeof transaksiSchema>;
