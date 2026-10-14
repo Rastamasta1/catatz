@@ -70,7 +70,7 @@ export function DeleteAccountSection() {
                 Delete Account
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
+            <DialogContent className="sm:max-w-106.25">
               <DialogHeader>
                 <DialogTitle className="text-red-500 flex items-center gap-2">
                   <AlertTriangle className="w-5 h-5" />
