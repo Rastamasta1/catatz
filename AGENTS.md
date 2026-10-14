@@ -50,7 +50,7 @@ Workflow default:
 
 1. Fitur/refactor kompleks: planner -> TDD -> implementasi main agent.
 2. Setelah perubahan: code review; tambahkan security review untuk auth, RLS, input, upload, Server Actions, secret, atau data sensitif.
-3. Jalankan `npm run verify:quick` selama iterasi dan `npm run verify` sebelum PR jika browser Playwright tersedia.
+3. Jalankan `npm run verify:quick` selama iterasi dan `npm run verify` sebelum PR.
 4. Target 80% berlaku untuk kode baru/diubah dan modul pure yang dimasukkan ke coverage, bukan klaim coverage global legacy code.
 
 ## Design Contract

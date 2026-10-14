@@ -68,7 +68,7 @@ Script validasi yang tersedia di repository:
 - `npm run typecheck`: TypeScript typecheck tanpa emit (`tsc --noEmit`).
 - `npm run test`: Unit test Vitest.
 - `npm run verify:quick`: Lint, typecheck, dan unit test sekaligus (wajib dijalankan sebelum commit/selesai task).
-- `npm run verify`: Verifikasi menyeluruh: quick verification, test coverage, Playwright E2E smoke test, dan production build.
+- `npm run verify`: Verifikasi menyeluruh: quick verification, test coverage, dan production build.
 - `npm run build`: Production build dengan Serwist (`next build --webpack`).
 
 ## Supabase Local
