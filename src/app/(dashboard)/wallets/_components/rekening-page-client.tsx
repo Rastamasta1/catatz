@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import Link from "next/link";
 import type {
   JenisRekening,
   Rekening,
@@ -45,23 +46,39 @@ const JENIS_ORDER: JenisRekening[] = ["Bank", "E-Wallet", "Tunai", "Investasi"];
 
 function usageDescription(usage: RekeningUsageCounts) {
   const parts = [
-    usage.transaksi_asal > 0
-      ? `${usage.transaksi_asal} transaksi asal/utama`
+    usage.transaksi_masuk > 0
+      ? `${usage.transaksi_masuk} transaksi pemasukan`
       : null,
-    usage.transaksi_tujuan > 0
-      ? `${usage.transaksi_tujuan} transfer tujuan`
+    usage.transaksi_keluar > 0
+      ? `${usage.transaksi_keluar} transaksi pengeluaran`
+      : null,
+    usage.transfer_keluar > 0
+      ? `${usage.transfer_keluar} transfer keluar`
+      : null,
+    usage.transfer_masuk > 0
+      ? `${usage.transfer_masuk} transfer masuk`
+      : null,
+    usage.koreksi_saldo > 0
+      ? `${usage.koreksi_saldo} koreksi saldo`
       : null,
     usage.hutang > 0 ? `${usage.hutang} hutang/piutang` : null,
     usage.hutang_cicilan > 0
       ? `${usage.hutang_cicilan} cicilan hutang/piutang`
       : null,
     usage.recurring_asal > 0
-      ? `${usage.recurring_asal} template berulang`
+      ? `${usage.recurring_asal} transaksi berulang`
       : null,
     usage.recurring_tujuan > 0
-      ? `${usage.recurring_tujuan} template transfer berulang`
+      ? `${usage.recurring_tujuan} transfer berulang`
       : null,
   ].filter(Boolean);
+
+  if (parts.length === 0 && usage.transaksi_asal > 0) {
+    parts.push(`${usage.transaksi_asal} transaksi`);
+  }
+  if (parts.length === 0 && usage.transaksi_tujuan > 0) {
+    parts.push(`${usage.transaksi_tujuan} transfer masuk`);
+  }
 
   return `Rekening ini masih dipakai oleh ${parts.join(", ")}. Hapus data terkait terlebih dahulu sebelum menghapus rekening.`;
 }
@@ -73,9 +90,21 @@ export default function RekeningPageClient({
   const { formatRupiah } = useSystemPreferences();
   const [rekening, setRekening] = useState(initialRekening);
   const [usageCounts, setUsageCounts] = useState(initialUsageCounts);
+  const [prevInitialRekening, setPrevInitialRekening] = useState(initialRekening);
+  const [prevInitialUsageCounts, setPrevInitialUsageCounts] = useState(initialUsageCounts);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editData, setEditData] = useState<Rekening | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
+
+  if (initialRekening !== prevInitialRekening) {
+    setPrevInitialRekening(initialRekening);
+    setRekening(initialRekening);
+  }
+
+  if (initialUsageCounts !== prevInitialUsageCounts) {
+    setPrevInitialUsageCounts(initialUsageCounts);
+    setUsageCounts(initialUsageCounts);
+  }
 
   const totalSaldo = useMemo(
     () =>
@@ -206,12 +235,18 @@ export default function RekeningPageClient({
                             {r.jenis}
                           </Badge>
                           {isUsed && usage ? (
-                            <Badge
-                              variant="secondary"
-                              className="ml-1.5 text-xs mt-0.5 rounded-full bg-primary/10 text-primary border-none"
+                            <Link
+                              href={`/transactions?rekening_id=${r.id}`}
+                              className="inline-block"
+                              title="Lihat semua transaksi rekening ini"
                             >
-                              Dipakai {usage.total} data
-                            </Badge>
+                              <Badge
+                                variant="secondary"
+                                className="ml-1.5 text-xs mt-0.5 rounded-full bg-primary/10 text-primary border-none hover:bg-primary/20 transition-colors cursor-pointer"
+                              >
+                                Dipakai {usage.total} data
+                              </Badge>
+                            </Link>
                           ) : null}
                         </div>
                         <div className="flex gap-1 flex-wrap">
@@ -300,12 +335,17 @@ export default function RekeningPageClient({
           setUsageCounts((prev) => ({
             ...prev,
             [r.id]: {
-              transaksi_asal: 0,
-              transaksi_tujuan: 0,
+              transaksi_masuk: 0,
+              transaksi_keluar: 0,
+              transfer_keluar: 0,
+              transfer_masuk: 0,
+              koreksi_saldo: 0,
               hutang: 0,
               hutang_cicilan: 0,
               recurring_asal: 0,
               recurring_tujuan: 0,
+              transaksi_asal: 0,
+              transaksi_tujuan: 0,
               total: 0,
             },
           }));

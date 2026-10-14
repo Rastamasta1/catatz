@@ -9,12 +9,17 @@ import { rekeningCreateSchema, rekeningEditSchema } from '@/validations/rekening
 
 function emptyRekeningUsageCounts(): RekeningUsageCounts {
   return {
-    transaksi_asal: 0,
-    transaksi_tujuan: 0,
+    transaksi_masuk: 0,
+    transaksi_keluar: 0,
+    transfer_keluar: 0,
+    transfer_masuk: 0,
+    koreksi_saldo: 0,
     hutang: 0,
     hutang_cicilan: 0,
     recurring_asal: 0,
     recurring_tujuan: 0,
+    transaksi_asal: 0,
+    transaksi_tujuan: 0,
     total: 0,
   };
 }
@@ -22,7 +27,7 @@ function emptyRekeningUsageCounts(): RekeningUsageCounts {
 function incrementUsage(
   map: Record<string, RekeningUsageCounts>,
   id: string | null | undefined,
-  key: Exclude<keyof RekeningUsageCounts, 'total'>,
+  key: Exclude<keyof RekeningUsageCounts, 'total' | 'transaksi_asal' | 'transaksi_tujuan'>,
 ) {
   if (!id) return;
 
@@ -31,8 +36,40 @@ function incrementUsage(
   map[id].total += 1;
 }
 
+function formatRekeningUsageParts(usage: RekeningUsageCounts): string[] {
+  return [
+    usage.transaksi_masuk > 0
+      ? `${usage.transaksi_masuk} transaksi pemasukan`
+      : null,
+    usage.transaksi_keluar > 0
+      ? `${usage.transaksi_keluar} transaksi pengeluaran`
+      : null,
+    usage.transfer_keluar > 0
+      ? `${usage.transfer_keluar} transfer keluar`
+      : null,
+    usage.transfer_masuk > 0
+      ? `${usage.transfer_masuk} transfer masuk`
+      : null,
+    usage.koreksi_saldo > 0
+      ? `${usage.koreksi_saldo} koreksi saldo`
+      : null,
+    usage.hutang > 0 ? `${usage.hutang} hutang/piutang` : null,
+    usage.hutang_cicilan > 0
+      ? `${usage.hutang_cicilan} cicilan hutang/piutang`
+      : null,
+    usage.recurring_asal > 0
+      ? `${usage.recurring_asal} transaksi berulang`
+      : null,
+    usage.recurring_tujuan > 0
+      ? `${usage.recurring_tujuan} transfer berulang`
+      : null,
+  ].filter(Boolean) as string[];
+}
+
 function buildRekeningUsageError(usage: RekeningUsageCounts) {
-  return `Rekening ini masih dipakai oleh ${usage.total} data keuangan. Hapus transaksi, hutang/piutang, cicilan, atau template transaksi berulang terkait terlebih dahulu.`;
+  const parts = formatRekeningUsageParts(usage);
+  const detail = parts.length > 0 ? ` (${parts.join(', ')})` : '';
+  return `Rekening ini masih dipakai oleh ${usage.total} data keuangan${detail}. Hapus data terkait terlebih dahulu sebelum menghapus rekening.`;
 }
 
 async function getSingleRekeningUsageCounts(
@@ -40,38 +77,69 @@ async function getSingleRekeningUsageCounts(
   userId: string,
   id: string,
 ): Promise<ActionResult<RekeningUsageCounts>> {
-  const [transaksiAsal, transaksiTujuan, hutang, recurringAsal, recurringTujuan] =
-    await Promise.all([
-      supabase
-        .from('transaksi')
-        .select('id', { count: 'exact', head: true })
-        .eq('user_id', userId)
-        .eq('rekening_id', id),
-      supabase
-        .from('transaksi')
-        .select('id', { count: 'exact', head: true })
-        .eq('user_id', userId)
-        .eq('rekening_tujuan', id),
-      supabase
-        .from('hutang')
-        .select('id', { count: 'exact', head: true })
-        .eq('user_id', userId)
-        .eq('rekening_id', id),
-      supabase
-        .from('recurring_transaksi')
-        .select('id', { count: 'exact', head: true })
-        .eq('user_id', userId)
-        .eq('rekening_id', id),
-      supabase
-        .from('recurring_transaksi')
-        .select('id', { count: 'exact', head: true })
-        .eq('user_id', userId)
-        .eq('rekening_tujuan', id),
-    ]);
+  const [
+    transaksiIncome,
+    transaksiExpense,
+    transferKeluar,
+    transferMasuk,
+    koreksiSaldo,
+    hutang,
+    recurringAsal,
+    recurringTujuan,
+  ] = await Promise.all([
+    supabase
+      .from('transaksi')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('rekening_id', id)
+      .eq('tipe', 'income'),
+    supabase
+      .from('transaksi')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('rekening_id', id)
+      .eq('tipe', 'expense'),
+    supabase
+      .from('transaksi')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('rekening_id', id)
+      .eq('tipe', 'transfer'),
+    supabase
+      .from('transaksi')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('tipe', 'transfer')
+      .eq('rekening_tujuan', id),
+    supabase
+      .from('transaksi')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('rekening_id', id)
+      .eq('tipe', 'correction'),
+    supabase
+      .from('hutang')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('rekening_id', id),
+    supabase
+      .from('recurring_transaksi')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('rekening_id', id),
+    supabase
+      .from('recurring_transaksi')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('rekening_tujuan', id),
+  ]);
 
   for (const result of [
-    transaksiAsal,
-    transaksiTujuan,
+    transaksiIncome,
+    transaksiExpense,
+    transferKeluar,
+    transferMasuk,
+    koreksiSaldo,
     hutang,
     recurringAsal,
     recurringTujuan,
@@ -102,20 +170,37 @@ async function getSingleRekeningUsageCounts(
     cicilanCount = count ?? 0;
   }
 
+  const countIncome = transaksiIncome.count ?? 0;
+  const countExpense = transaksiExpense.count ?? 0;
+  const countTransferKeluar = transferKeluar.count ?? 0;
+  const countTransferMasuk = transferMasuk.count ?? 0;
+  const countCorrection = koreksiSaldo.count ?? 0;
+  const countHutang = hutang.count ?? 0;
+  const countRecurringAsal = recurringAsal.count ?? 0;
+  const countRecurringTujuan = recurringTujuan.count ?? 0;
+
   const data: RekeningUsageCounts = {
-    transaksi_asal: transaksiAsal.count ?? 0,
-    transaksi_tujuan: transaksiTujuan.count ?? 0,
-    hutang: hutang.count ?? 0,
+    transaksi_masuk: countIncome,
+    transaksi_keluar: countExpense,
+    transfer_keluar: countTransferKeluar,
+    transfer_masuk: countTransferMasuk,
+    koreksi_saldo: countCorrection,
+    hutang: countHutang,
     hutang_cicilan: cicilanCount,
-    recurring_asal: recurringAsal.count ?? 0,
-    recurring_tujuan: recurringTujuan.count ?? 0,
+    recurring_asal: countRecurringAsal,
+    recurring_tujuan: countRecurringTujuan,
+    transaksi_asal: countIncome + countExpense + countTransferKeluar + countCorrection,
+    transaksi_tujuan: countTransferMasuk,
     total:
-      (transaksiAsal.count ?? 0) +
-      (transaksiTujuan.count ?? 0) +
-      (hutang.count ?? 0) +
+      countIncome +
+      countExpense +
+      countTransferKeluar +
+      countTransferMasuk +
+      countCorrection +
+      countHutang +
       cicilanCount +
-      (recurringAsal.count ?? 0) +
-      (recurringTujuan.count ?? 0),
+      countRecurringAsal +
+      countRecurringTujuan,
   };
 
   return { success: true, data };
@@ -140,7 +225,7 @@ export async function getRekeningUsageCountsMap(): Promise<Record<string, Rekeni
   const [transaksi, hutang, recurring] = await Promise.all([
     supabase
       .from('transaksi')
-      .select('rekening_id, rekening_tujuan')
+      .select('tipe, rekening_id, rekening_tujuan')
       .eq('user_id', user.id),
     supabase
       .from('hutang')
@@ -159,8 +244,22 @@ export async function getRekeningUsageCountsMap(): Promise<Record<string, Rekeni
   const usageMap: Record<string, RekeningUsageCounts> = {};
 
   for (const item of transaksi.data ?? []) {
-    incrementUsage(usageMap, item.rekening_id, 'transaksi_asal');
-    incrementUsage(usageMap, item.rekening_tujuan, 'transaksi_tujuan');
+    if (item.tipe === 'income') {
+      incrementUsage(usageMap, item.rekening_id, 'transaksi_masuk');
+    } else if (item.tipe === 'expense') {
+      incrementUsage(usageMap, item.rekening_id, 'transaksi_keluar');
+    } else if (item.tipe === 'correction') {
+      incrementUsage(usageMap, item.rekening_id, 'koreksi_saldo');
+    } else if (item.tipe === 'transfer') {
+      incrementUsage(usageMap, item.rekening_id, 'transfer_keluar');
+      incrementUsage(usageMap, item.rekening_tujuan, 'transfer_masuk');
+      if (item.rekening_tujuan && usageMap[item.rekening_tujuan]) {
+        usageMap[item.rekening_tujuan].transaksi_tujuan += 1;
+      }
+    }
+    if (item.rekening_id && usageMap[item.rekening_id]) {
+      usageMap[item.rekening_id].transaksi_asal += 1;
+    }
   }
 
   const hutangIds = (hutang.data ?? []).map((item) => item.id);

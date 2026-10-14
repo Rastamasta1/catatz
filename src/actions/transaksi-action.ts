@@ -66,7 +66,8 @@ export async function getTransaksi(filter: TransaksiFilter = {}): Promise<Transa
     query = query.in('tipe', filter.tipe);
   }
   if (filter.rekening_id?.length) {
-    query = query.in('rekening_id', filter.rekening_id);
+    const ids = filter.rekening_id.join(',');
+    query = query.or(`rekening_id.in.(${ids}),and(tipe.eq.transfer,rekening_tujuan.in.(${ids}))`);
   }
   if (filter.kategori_id?.length) {
     query = query.in('kategori_id', filter.kategori_id);
