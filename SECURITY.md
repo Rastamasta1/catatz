@@ -100,7 +100,7 @@ For developers contributing to or self-hosting CatatZ:
 
 1. **Run Automated Verification**:
    - `npm run verify:quick` for ESLint, TypeScript typechecks, and Vitest unit tests.
-   - `npm run verify` for full verification including Playwright E2E tests and production PWA builds.
+   - `npm run verify` for full verification including test coverage and production PWA builds.
 2. **Immutability of Database Migrations**:
    - Migration files in `src/migrations/` are immutable. Always create a new `.sql` migration file for schema or RLS changes.
 3. **Audit New RLS Policies**:

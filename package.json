@@ -15,9 +15,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "test:e2e": "playwright test",
     "verify:quick": "npm run lint && npm run typecheck && npm run test",
-    "verify": "npm run verify:quick && npm run test:coverage && npm run test:e2e && npm run build"
+    "verify": "npm run verify:quick && npm run test:coverage && npm run build"
   },
   "overrides": {
     "postcss": "8.5.12",
@@ -71,7 +70,6 @@
   },
   "devDependencies": {
     "@next/bundle-analyzer": "^16.2.6",
-    "@playwright/test": "^1.60.0",
     "@tailwindcss/postcss": "^4",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",

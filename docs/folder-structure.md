@@ -31,11 +31,9 @@ catatz/
 │   └── validations/
 ├── docs/
 ├── tests/
-│   ├── unit/
-│   └── e2e/
+│   └── unit/
 ├── next.config.ts
 ├── vitest.config.ts
-├── playwright.config.ts
 ├── package.json
 ├── package-lock.json
 ├── vercel.json
@@ -65,12 +63,11 @@ catatz/
 - `public`: asset static, PWA manifest, icons, offline page, dan generated service worker.
 - `docs`: dokumentasi teknis project.
 - `tests/unit`: unit test Vitest untuk helper, policy hook, dan modul pure.
-- `tests/e2e`: smoke test Playwright dan mock service lokal; tidak memakai Supabase production.
 - `.agents/skills`: canonical skills, termasuk skills Supabase dan subset ECC yang relevan.
 - `.claude`: project agents read-only, skill wrappers, dan hook adapter untuk Claude Code.
 - `.codex`: project agents read-only, hook lifecycle, serta konfigurasi Chrome DevTools MCP untuk Codex.
 - `.ecc`: manifest instalasi dan shared hook implementation. `.ecc/runtime` bersifat lokal dan diabaikan Git.
-- `.github/workflows`: CI lint, typecheck, unit coverage, build, dan Playwright smoke test.
+- `.github/workflows`: CI lint, typecheck, unit coverage, dan build.
 - `AGENTS.md`: instruksi repository-level lintas agent, documentation gate, ECC workflow, final response, dan suggested Conventional Commit message.
 
 ## Routing

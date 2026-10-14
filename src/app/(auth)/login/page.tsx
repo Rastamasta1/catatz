@@ -194,7 +194,7 @@ export default function LoginPage() {
   return (
     <Suspense
       fallback={
-        <div className="bg-card dark:bg-surface-dark-elevated border border-border dark:border-white/10 rounded-card p-8 flex items-center justify-center min-h-[400px]">
+        <div className="bg-card dark:bg-surface-dark-elevated border border-border dark:border-white/10 rounded-card p-8 flex items-center justify-center min-h-100">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       }
