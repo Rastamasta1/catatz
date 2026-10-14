@@ -51,6 +51,7 @@ async function getSingleRekeningUsageCounts(
         .from('transaksi')
         .select('id', { count: 'exact', head: true })
         .eq('user_id', userId)
+        .eq('tipe', 'transfer')
         .eq('rekening_tujuan', id),
       supabase
         .from('hutang')
@@ -140,7 +141,7 @@ export async function getRekeningUsageCountsMap(): Promise<Record<string, Rekeni
   const [transaksi, hutang, recurring] = await Promise.all([
     supabase
       .from('transaksi')
-      .select('rekening_id, rekening_tujuan')
+      .select('tipe, rekening_id, rekening_tujuan')
       .eq('user_id', user.id),
     supabase
       .from('hutang')
@@ -160,7 +161,9 @@ export async function getRekeningUsageCountsMap(): Promise<Record<string, Rekeni
 
   for (const item of transaksi.data ?? []) {
     incrementUsage(usageMap, item.rekening_id, 'transaksi_asal');
-    incrementUsage(usageMap, item.rekening_tujuan, 'transaksi_tujuan');
+    if (item.tipe === 'transfer') {
+      incrementUsage(usageMap, item.rekening_tujuan, 'transaksi_tujuan');
+    }
   }
 
   const hutangIds = (hutang.data ?? []).map((item) => item.id);

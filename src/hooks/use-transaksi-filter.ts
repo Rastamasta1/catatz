@@ -54,8 +54,16 @@ export function useTransaksiFilter<T extends Transaksi = Transaksi>({
     const result = transaksi.filter((t) => {
       if (filter.tipe?.length && !filter.tipe.includes(t.tipe))
         return false;
-      if (filter.rekening_id?.length && !filter.rekening_id.includes(t.rekening_id ?? ""))
-        return false;
+      if (filter.rekening_id?.length) {
+        const matchesAsal = t.rekening_id
+          ? filter.rekening_id.includes(t.rekening_id)
+          : false;
+        const matchesTujuan =
+          t.tipe === "transfer" && t.rekening_tujuan
+            ? filter.rekening_id.includes(t.rekening_tujuan)
+            : false;
+        if (!matchesAsal && !matchesTujuan) return false;
+      }
       if (filter.kategori_id?.length && !filter.kategori_id.includes(t.kategori_id ?? ""))
         return false;
       if (

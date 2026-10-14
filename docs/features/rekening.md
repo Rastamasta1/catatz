@@ -62,7 +62,9 @@ Initial data diambil dengan:
 
 - Halaman menampilkan total saldo dari rekening yang tidak di-exclude.
 - User bisa tambah, edit, hapus rekening.
-- Rekening yang masih dipakai menampilkan badge jumlah data dan tombol hapus memberi pesan agar data terkait dihapus terlebih dahulu.
+- Rekening yang masih dipakai menampilkan badge jumlah data (`Dipakai {usage.total} data`). Badge dapat diklik untuk langsung membuka halaman `/transactions?rekening_id=...` yang memfilter seluruh transaksi terkait rekening tersebut (baik uang masuk, keluar, transfer masuk/keluar, hutang/piutang, maupun koreksi saldo).
+- Tombol hapus memberi rincian data pemakaian (transaksi keluar/masuk/koreksi, transfer masuk, hutang/piutang, cicilan, dan transaksi berulang) agar data terkait dihapus terlebih dahulu.
+- State rekening dan pemakaian data pada client otomatis tersinkronisasi saat initial props dari Server Component diperbarui.
 - User bisa toggle rekening untuk dihitung/tidak dihitung dalam total.
 - Dialog create memakai `rekeningCreateSchema`.
 - Dialog edit memakai `rekeningEditSchema`.
