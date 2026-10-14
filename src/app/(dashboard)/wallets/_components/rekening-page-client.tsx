@@ -46,11 +46,20 @@ const JENIS_ORDER: JenisRekening[] = ["Bank", "E-Wallet", "Tunai", "Investasi"];
 
 function usageDescription(usage: RekeningUsageCounts) {
   const parts = [
-    usage.transaksi_asal > 0
-      ? `${usage.transaksi_asal} transaksi (keluar/masuk/koreksi)`
+    usage.transaksi_masuk > 0
+      ? `${usage.transaksi_masuk} transaksi pemasukan`
       : null,
-    usage.transaksi_tujuan > 0
-      ? `${usage.transaksi_tujuan} transfer masuk`
+    usage.transaksi_keluar > 0
+      ? `${usage.transaksi_keluar} transaksi pengeluaran`
+      : null,
+    usage.transfer_keluar > 0
+      ? `${usage.transfer_keluar} transfer keluar`
+      : null,
+    usage.transfer_masuk > 0
+      ? `${usage.transfer_masuk} transfer masuk`
+      : null,
+    usage.koreksi_saldo > 0
+      ? `${usage.koreksi_saldo} koreksi saldo`
       : null,
     usage.hutang > 0 ? `${usage.hutang} hutang/piutang` : null,
     usage.hutang_cicilan > 0
@@ -63,6 +72,13 @@ function usageDescription(usage: RekeningUsageCounts) {
       ? `${usage.recurring_tujuan} transfer berulang`
       : null,
   ].filter(Boolean);
+
+  if (parts.length === 0 && usage.transaksi_asal > 0) {
+    parts.push(`${usage.transaksi_asal} transaksi`);
+  }
+  if (parts.length === 0 && usage.transaksi_tujuan > 0) {
+    parts.push(`${usage.transaksi_tujuan} transfer masuk`);
+  }
 
   return `Rekening ini masih dipakai oleh ${parts.join(", ")}. Hapus data terkait terlebih dahulu sebelum menghapus rekening.`;
 }
@@ -319,12 +335,17 @@ export default function RekeningPageClient({
           setUsageCounts((prev) => ({
             ...prev,
             [r.id]: {
-              transaksi_asal: 0,
-              transaksi_tujuan: 0,
+              transaksi_masuk: 0,
+              transaksi_keluar: 0,
+              transfer_keluar: 0,
+              transfer_masuk: 0,
+              koreksi_saldo: 0,
               hutang: 0,
               hutang_cicilan: 0,
               recurring_asal: 0,
               recurring_tujuan: 0,
+              transaksi_asal: 0,
+              transaksi_tujuan: 0,
               total: 0,
             },
           }));

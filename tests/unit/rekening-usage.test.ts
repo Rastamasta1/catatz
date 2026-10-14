@@ -3,12 +3,17 @@ import type { RekeningUsageCounts } from "@/types/rekening";
 
 function emptyRekeningUsageCounts(): RekeningUsageCounts {
   return {
-    transaksi_asal: 0,
-    transaksi_tujuan: 0,
+    transaksi_masuk: 0,
+    transaksi_keluar: 0,
+    transfer_keluar: 0,
+    transfer_masuk: 0,
+    koreksi_saldo: 0,
     hutang: 0,
     hutang_cicilan: 0,
     recurring_asal: 0,
     recurring_tujuan: 0,
+    transaksi_asal: 0,
+    transaksi_tujuan: 0,
     total: 0,
   };
 }
@@ -16,7 +21,7 @@ function emptyRekeningUsageCounts(): RekeningUsageCounts {
 function incrementUsage(
   map: Record<string, RekeningUsageCounts>,
   id: string | null | undefined,
-  key: Exclude<keyof RekeningUsageCounts, "total">,
+  key: Exclude<keyof RekeningUsageCounts, "total" | "transaksi_asal" | "transaksi_tujuan">,
 ) {
   if (!id) return;
   map[id] ??= emptyRekeningUsageCounts();
@@ -26,11 +31,20 @@ function incrementUsage(
 
 function usageDescription(usage: RekeningUsageCounts) {
   const parts = [
-    usage.transaksi_asal > 0
-      ? `${usage.transaksi_asal} transaksi (keluar/masuk/koreksi)`
+    usage.transaksi_masuk > 0
+      ? `${usage.transaksi_masuk} transaksi pemasukan`
       : null,
-    usage.transaksi_tujuan > 0
-      ? `${usage.transaksi_tujuan} transfer masuk`
+    usage.transaksi_keluar > 0
+      ? `${usage.transaksi_keluar} transaksi pengeluaran`
+      : null,
+    usage.transfer_keluar > 0
+      ? `${usage.transfer_keluar} transfer keluar`
+      : null,
+    usage.transfer_masuk > 0
+      ? `${usage.transfer_masuk} transfer masuk`
+      : null,
+    usage.koreksi_saldo > 0
+      ? `${usage.koreksi_saldo} koreksi saldo`
       : null,
     usage.hutang > 0 ? `${usage.hutang} hutang/piutang` : null,
     usage.hutang_cicilan > 0
@@ -44,11 +58,18 @@ function usageDescription(usage: RekeningUsageCounts) {
       : null,
   ].filter(Boolean);
 
+  if (parts.length === 0 && usage.transaksi_asal > 0) {
+    parts.push(`${usage.transaksi_asal} transaksi`);
+  }
+  if (parts.length === 0 && usage.transaksi_tujuan > 0) {
+    parts.push(`${usage.transaksi_tujuan} transfer masuk`);
+  }
+
   return `Rekening ini masih dipakai oleh ${parts.join(", ")}. Hapus data terkait terlebih dahulu sebelum menghapus rekening.`;
 }
 
 describe("Rekening Usage Calculation Logic", () => {
-  it("properly attributes outgoing and incoming transfers to both source and destination accounts", () => {
+  it("properly attributes outgoing and incoming transfers to both source and destination accounts with granular details", () => {
     const usageMap: Record<string, RekeningUsageCounts> = {};
 
     const transactions = [
@@ -65,36 +86,52 @@ describe("Rekening Usage Calculation Logic", () => {
     ];
 
     for (const item of transactions) {
-      incrementUsage(usageMap, item.rekening_id, "transaksi_asal");
-      if (item.tipe === "transfer") {
-        incrementUsage(usageMap, item.rekening_tujuan, "transaksi_tujuan");
+      if (item.tipe === "income") {
+        incrementUsage(usageMap, item.rekening_id, "transaksi_masuk");
+      } else if (item.tipe === "expense") {
+        incrementUsage(usageMap, item.rekening_id, "transaksi_keluar");
+      } else if (item.tipe === "correction") {
+        incrementUsage(usageMap, item.rekening_id, "koreksi_saldo");
+      } else if (item.tipe === "transfer") {
+        incrementUsage(usageMap, item.rekening_id, "transfer_keluar");
+        incrementUsage(usageMap, item.rekening_tujuan, "transfer_masuk");
+        if (item.rekening_tujuan && usageMap[item.rekening_tujuan]) {
+          usageMap[item.rekening_tujuan].transaksi_tujuan += 1;
+        }
+      }
+      if (item.rekening_id && usageMap[item.rekening_id]) {
+        usageMap[item.rekening_id].transaksi_asal += 1;
       }
     }
 
     // Rekening A:
-    // transaksi_asal: 4 (income, expense, correction, transfer out to B)
-    // transaksi_tujuan: 1 (transfer in from B)
-    // total: 5
+    // 1 pemasukan, 1 pengeluaran, 1 koreksi saldo, 1 transfer keluar, 1 transfer masuk = total 5
     expect(usageMap["rek-a"]).toBeDefined();
-    expect(usageMap["rek-a"].transaksi_asal).toBe(4);
-    expect(usageMap["rek-a"].transaksi_tujuan).toBe(1);
+    expect(usageMap["rek-a"].transaksi_masuk).toBe(1);
+    expect(usageMap["rek-a"].transaksi_keluar).toBe(1);
+    expect(usageMap["rek-a"].koreksi_saldo).toBe(1);
+    expect(usageMap["rek-a"].transfer_keluar).toBe(1);
+    expect(usageMap["rek-a"].transfer_masuk).toBe(1);
     expect(usageMap["rek-a"].total).toBe(5);
 
     // Rekening B:
-    // transaksi_asal: 1 (transfer out to A)
-    // transaksi_tujuan: 1 (transfer in from A)
-    // total: 2
+    // 1 transfer keluar, 1 transfer masuk = total 2
     expect(usageMap["rek-b"]).toBeDefined();
-    expect(usageMap["rek-b"].transaksi_asal).toBe(1);
-    expect(usageMap["rek-b"].transaksi_tujuan).toBe(1);
+    expect(usageMap["rek-b"].transfer_keluar).toBe(1);
+    expect(usageMap["rek-b"].transfer_masuk).toBe(1);
     expect(usageMap["rek-b"].total).toBe(2);
 
-    expect(usageDescription(usageMap["rek-a"])).toContain(
-      "4 transaksi (keluar/masuk/koreksi), 1 transfer masuk"
-    );
-    expect(usageDescription(usageMap["rek-b"])).toContain(
-      "1 transaksi (keluar/masuk/koreksi), 1 transfer masuk"
-    );
+    // Verify detailed message
+    const descA = usageDescription(usageMap["rek-a"]);
+    expect(descA).toContain("1 transaksi pemasukan");
+    expect(descA).toContain("1 transaksi pengeluaran");
+    expect(descA).toContain("1 transfer keluar");
+    expect(descA).toContain("1 transfer masuk");
+    expect(descA).toContain("1 koreksi saldo");
+
+    const descB = usageDescription(usageMap["rek-b"]);
+    expect(descB).toContain("1 transfer keluar");
+    expect(descB).toContain("1 transfer masuk");
   });
 
   it("does not increment destination usage for non-transfer rows with leftover values", () => {
@@ -106,14 +143,14 @@ describe("Rekening Usage Calculation Logic", () => {
     ];
 
     for (const item of dirtyRows) {
-      incrementUsage(usageMap, item.rekening_id, "transaksi_asal");
-      if (item.tipe === "transfer") {
-        incrementUsage(usageMap, item.rekening_tujuan, "transaksi_tujuan");
+      if (item.tipe === "income") {
+        incrementUsage(usageMap, item.rekening_id, "transaksi_masuk");
       }
     }
 
     // Rekening B should have no usage attributed
     expect(usageMap["rek-b"]).toBeUndefined();
     expect(usageMap["rek-a"].total).toBe(1);
+    expect(usageMap["rek-a"].transaksi_masuk).toBe(1);
   });
 });
