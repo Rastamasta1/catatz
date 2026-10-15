@@ -176,7 +176,7 @@ export function TransaksiFilterSheet({
 
         {/* Scrollable Form Body dengan padding bawah ekstra agar konten tidak tertutup footer */}
         <div className="flex-1 overflow-y-auto px-5 sm:px-6 py-5 space-y-6 pb-32">
-          {/* 1. Tipe Transaksi (Segmented Control 2x2 di mobile, 4 kolom di desktop) */}
+          {/* 1. Tipe Transaksi (Segmented Control 2x2 agar teks tidak bertumpuk di drawer desktop & mobile) */}
           <div className="space-y-2">
             <Label className="text-sm font-semibold text-foreground">
               Tipe Transaksi
@@ -186,31 +186,31 @@ export function TransaksiFilterSheet({
               onValueChange={handleTipeChange}
               className="w-full"
             >
-              <TabsList className="w-full grid grid-cols-2 sm:grid-cols-4 gap-1.5 p-1.5 bg-surface-strong rounded-[14px] h-auto">
+              <TabsList className="w-full grid grid-cols-2 gap-1.5 p-1.5 bg-surface-strong rounded-[14px] h-auto">
                 <TabsTrigger
                   value="all"
-                  className="h-10 rounded-[10px] text-xs sm:text-sm font-medium transition-all"
+                  className="h-11 rounded-[10px] text-xs sm:text-sm font-medium transition-all"
                   id="tab-filter-semua"
                 >
                   Semua
                 </TabsTrigger>
                 <TabsTrigger
                   value="expense"
-                  className="h-10 rounded-[10px] text-xs sm:text-sm font-medium transition-all"
+                  className="h-11 rounded-[10px] text-xs sm:text-sm font-medium transition-all"
                   id="tab-filter-pengeluaran"
                 >
                   Pengeluaran
                 </TabsTrigger>
                 <TabsTrigger
                   value="income"
-                  className="h-10 rounded-[10px] text-xs sm:text-sm font-medium transition-all"
+                  className="h-11 rounded-[10px] text-xs sm:text-sm font-medium transition-all"
                   id="tab-filter-pemasukan"
                 >
                   Pemasukan
                 </TabsTrigger>
                 <TabsTrigger
                   value="transfer"
-                  className="h-10 rounded-[10px] text-xs sm:text-sm font-medium transition-all"
+                  className="h-11 rounded-[10px] text-xs sm:text-sm font-medium transition-all"
                   id="tab-filter-transfer"
                 >
                   Transfer

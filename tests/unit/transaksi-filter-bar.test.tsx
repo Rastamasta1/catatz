@@ -352,4 +352,49 @@ describe("TransaksiFilterBar Component", () => {
     expect(screen.getByText("Sumber Dana (Rekening Asal)")).toBeInTheDocument();
     expect(screen.getByText("Tujuan Transfer (Rekening Tujuan)")).toBeInTheDocument();
   });
+
+  it("renders [Filter] - [Search] - [Tambah Transaksi] in correct order within a single-row container", () => {
+    const handleAddClick = vi.fn();
+
+    const { container } = render(
+      <TransaksiFilterBar
+        search=""
+        onSearchChange={vi.fn()}
+        filter={{
+          tipe: [],
+          rekening_id: [],
+          kategori_id: [],
+          sortBy: "tanggal",
+          sortOrder: "desc",
+        }}
+        onFilterChange={vi.fn()}
+        rekening={mockRekening}
+        kategori={mockKategori}
+        onAddClick={handleAddClick}
+      />
+    );
+
+    // Verify container uses single-row flex layout
+    const rowContainer = container.querySelector(".flex.items-center.gap-2.w-full");
+    expect(rowContainer).toBeInTheDocument();
+
+    const filterBtn = container.querySelector("#btn-filter-trigger");
+    const searchInput = container.querySelector("#input-cari-transaksi");
+    const addBtn = container.querySelector("#btn-tambah-transaksi");
+
+    expect(filterBtn).toBeInTheDocument();
+    expect(searchInput).toBeInTheDocument();
+    expect(addBtn).toBeInTheDocument();
+
+    // Verify ordering in DOM: Filter comes before Search, Search comes before Add
+    expect(
+      filterBtn!.compareDocumentPosition(searchInput!) &
+        Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+    expect(
+      searchInput!.compareDocumentPosition(addBtn!) &
+        Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+  });
 });
+

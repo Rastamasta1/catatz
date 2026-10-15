@@ -146,51 +146,55 @@ export function TransaksiFilterBar({
 
   return (
     <div className="flex flex-col gap-2.5">
-      {/* ── Baris 1: Search + Tombol Filter + Transaksi Baru ── */}
-      <div className="flex flex-col sm:flex-row gap-2">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+      {/* ── Baris 1: Filter + Search + Tambah Transaksi (1 baris pada mobile & desktop) ── */}
+      <div className="flex items-center gap-2 w-full">
+        {/* 1. Tombol Filter */}
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => setSheetOpen(true)}
+          className="h-12 px-3 sm:px-4 rounded-full border border-hairline bg-background hover:bg-surface-soft font-medium text-sm flex items-center justify-center gap-1.5 sm:gap-2 shrink-0 transition-colors cursor-pointer"
+          id="btn-filter-trigger"
+          aria-label="Filter transaksi"
+        >
+          <SlidersHorizontal className="h-4 w-4 text-muted-foreground" />
+          <span>Filter</span>
+          {activeFilterCount > 0 && (
+            <Badge
+              variant="secondary"
+              className="bg-primary text-white hover:bg-primary rounded-full text-[11px] px-1.5 py-0 min-w-5 h-5 flex items-center justify-center font-mono font-medium"
+              id="badge-filter-count"
+            >
+              {activeFilterCount}
+            </Badge>
+          )}
+        </Button>
+
+        {/* 2. Input Search */}
+        <div className="relative flex-1 min-w-0">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
           <ClearableInput
-            placeholder="Cari judul, catatan, atau kategori..."
+            placeholder="Cari judul, atau catatan..."
             value={search}
             onChange={(e) => onSearchChange(e.target.value)}
             onClear={() => onSearchChange("")}
-            className="pl-9"
+            className="pl-9 w-full"
             id="input-cari-transaksi"
           />
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => setSheetOpen(true)}
-            className="h-12 flex-1 sm:flex-none px-4 rounded-full border border-hairline bg-background hover:bg-surface-soft font-medium text-sm flex items-center justify-center gap-2 shrink-0 transition-colors"
-            id="btn-filter-trigger"
-          >
-            <SlidersHorizontal className="h-4 w-4 text-muted-foreground" />
-            <span>Filter</span>
-            {activeFilterCount > 0 && (
-              <Badge
-                variant="secondary"
-                className="bg-primary text-white hover:bg-primary rounded-full text-[11px] px-1.5 py-0 min-w-5 h-5 flex items-center justify-center font-mono font-medium"
-                id="badge-filter-count"
-              >
-                {activeFilterCount}
-              </Badge>
-            )}
-          </Button>
-
-          <Button
-            type="button"
-            onClick={onAddClick}
-            className="h-12 flex-1 sm:flex-none px-5 bg-primary hover:bg-[#003ecc] text-white rounded-full font-semibold gap-2 shrink-0 transition-colors"
-            id="btn-tambah-transaksi"
-          >
-            <Plus className="h-4 w-4" />
-            Transaksi Baru
-          </Button>
-        </div>
+        {/* 3. Tombol Tambah Transaksi (pada mobile hanya ikon +, desktop menampilkan teks) */}
+        <Button
+          type="button"
+          onClick={onAddClick}
+          aria-label="Transaksi Baru"
+          title="Transaksi Baru"
+          className="h-12 w-12 sm:w-auto p-0 sm:px-5 bg-primary hover:bg-[#003ecc] text-white rounded-full font-semibold flex items-center justify-center gap-2 shrink-0 transition-colors cursor-pointer"
+          id="btn-tambah-transaksi"
+        >
+          <Plus className="h-5 w-5 sm:h-4 sm:w-4" />
+          <span className="hidden sm:inline">Transaksi Baru</span>
+        </Button>
       </div>
 
       {/* ── Baris 2: Badge Filter Aktif (muncul ketika ada filter aktif) ── */}
