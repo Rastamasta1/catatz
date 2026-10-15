@@ -79,9 +79,9 @@ Initial data diambil di Server Component dengan:
 ## UI Behavior
 
 - User bisa menyaring transaksi berdasarkan pencarian teks (judul/catatan/kategori), periode tanggal aktif, serta panel Filter di sisi kanan.
-- Menu filter diakses melalui tombol `Filter` yang menampilkan badge angka jumlah filter aktif. Mengklik tombol ini membuka side panel (Sheet) dari sisi kanan layar.
+- Menu filter diakses melalui tombol `Filter` yang menampilkan badge angka jumlah filter aktif. Mengklik tombol ini membuka panel Filter: pada mobile layar penuh muncul dari bawah ke atas (fullscreen slide-up drawer dengan safe-area padding), sedangkan pada desktop meluncur dari sisi kanan (side sheet).
 - Formulir filter di dalam panel mencakup:
-  - Tipe Transaksi menggunakan segmented control (Semua, Pengeluaran, Pemasukan, Transfer).
+  - Tipe Transaksi menggunakan segmented control (Semua, Pengeluaran, Pemasukan, Transfer) dengan tata letak 2x2 yang lapang di mobile dan 4 kolom di desktop untuk mencegah teks bertumpuk.
   - Filter Transfer khusus: hanya muncul ketika tipe transaksi Transfer dipilih, menyediakan pilihan Sumber Dana (Rekening Asal) dan Tujuan Transfer (Rekening Tujuan).
   - Filter Rekening dan Kategori: tersedia saat tipe bukan Transfer untuk mempersempit hasil transaksi.
   - Rentang Nominal: menyediakan input nominal minimum dan maksimum dalam rupiah (Rp Min - Rp Max) dengan format mata uang otomatis.

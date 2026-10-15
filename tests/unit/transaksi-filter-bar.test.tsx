@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi, afterEach } from "vitest";
@@ -311,5 +312,44 @@ describe("TransaksiFilterBar Component", () => {
     const closeKatBtn = screen.getByLabelText(/Hapus filter kategori Makan & Minum/i);
     await user.click(closeKatBtn);
     expect(currentFilter.kategori_id).toEqual([]);
+  });
+
+  it("allows switching transaction type tabs inside the filter sheet", async () => {
+    const user = userEvent.setup();
+
+    function TestWrapper() {
+      const [filter, setFilter] = useState<TransaksiFilter>({
+        tipe: [],
+        rekening_id: [],
+        kategori_id: [],
+        sortBy: "tanggal",
+        sortOrder: "desc",
+      });
+
+      return (
+        <TransaksiFilterBar
+          search=""
+          onSearchChange={vi.fn()}
+          filter={filter}
+          onFilterChange={setFilter}
+          rekening={mockRekening}
+          kategori={mockKategori}
+          onAddClick={vi.fn()}
+        />
+      );
+    }
+
+    render(<TestWrapper />);
+
+    // Open sheet
+    await user.click(screen.getByRole("button", { name: /Filter/i }));
+
+    // Click 'Transfer' tab
+    const transferTab = screen.getByRole("tab", { name: /Transfer/i });
+    await user.click(transferTab);
+
+    // When transfer is selected, transfer routing fields should appear
+    expect(screen.getByText("Sumber Dana (Rekening Asal)")).toBeInTheDocument();
+    expect(screen.getByText("Tujuan Transfer (Rekening Tujuan)")).toBeInTheDocument();
   });
 });

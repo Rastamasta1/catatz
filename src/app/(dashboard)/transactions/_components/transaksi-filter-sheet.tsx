@@ -11,6 +11,7 @@ import {
   SheetTitle,
   SheetDescription,
   SheetFooter,
+  SheetClose,
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -23,8 +24,9 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { NominalInput } from "@/components/common/nominal-input";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
-import { Check, RotateCcw } from "lucide-react";
+import { Check, RotateCcw, Search, X } from "lucide-react";
 
 export type TransaksiFilterSheetProps = {
   open: boolean;
@@ -43,11 +45,14 @@ export function TransaksiFilterSheet({
   rekening,
   kategori,
 }: TransaksiFilterSheetProps) {
+  const isMobile = useIsMobile();
   const [kategoriSearch, setKategoriSearch] = useState("");
 
   // Tipe segmented control: "all" | "expense" | "income" | "transfer"
   const currentTipe =
-    filter.tipe && filter.tipe.length === 1 && ["expense", "income", "transfer"].includes(filter.tipe[0])
+    filter.tipe &&
+    filter.tipe.length === 1 &&
+    ["expense", "income", "transfer"].includes(filter.tipe[0])
       ? filter.tipe[0]
       : "all";
 
@@ -135,20 +140,43 @@ export function TransaksiFilterSheet({
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
-        side="right"
-        className="w-full sm:max-w-md p-0 flex flex-col gap-0 bg-card text-card-foreground border-hairline shadow-lg"
+        side={isMobile ? "bottom" : "right"}
+        showCloseButton={false}
+        className={cn(
+          "p-0 flex flex-col gap-0 bg-card text-card-foreground transition-all duration-300",
+          // Mobile: muncul dari bawah ke atas dan fullscreen
+          isMobile
+            ? "inset-0 h-dvh max-h-dvh w-full rounded-none border-none"
+            : "w-full sm:max-w-md sm:h-full border-l border-hairline shadow-lg",
+        )}
       >
-        <SheetHeader className="px-6 py-5 border-b border-hairline shrink-0 text-left">
-          <SheetTitle className="text-lg font-semibold text-foreground">
-            Filter Transaksi
-          </SheetTitle>
-          <SheetDescription className="text-xs text-muted-foreground">
-            Atur kriteria untuk menyaring daftar transaksi Anda.
-          </SheetDescription>
+        {/* Header dengan safe-area padding untuk notch/island di mobile */}
+        <SheetHeader className="pt-[max(1.25rem,env(safe-area-inset-top))] px-5 sm:px-6 pb-4 border-b border-hairline shrink-0 text-left">
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <SheetTitle className="text-lg font-semibold text-foreground">
+                Filter Transaksi
+              </SheetTitle>
+              <SheetDescription className="text-xs text-muted-foreground">
+                Atur kriteria untuk menyaring daftar transaksi Anda.
+              </SheetDescription>
+            </div>
+            <SheetClose asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-9 w-9 rounded-full text-muted-foreground hover:text-foreground hover:bg-surface-strong shrink-0 cursor-pointer"
+                aria-label="Tutup filter"
+              >
+                <X className="h-5 w-5" />
+              </Button>
+            </SheetClose>
+          </div>
         </SheetHeader>
 
-        <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6">
-          {/* 1. Tipe Transaksi (Segmented Control) */}
+        {/* Scrollable Form Body dengan padding bawah ekstra agar konten tidak tertutup footer */}
+        <div className="flex-1 overflow-y-auto px-5 sm:px-6 py-5 space-y-6 pb-32">
+          {/* 1. Tipe Transaksi (Segmented Control 2x2 di mobile, 4 kolom di desktop) */}
           <div className="space-y-2">
             <Label className="text-sm font-semibold text-foreground">
               Tipe Transaksi
@@ -158,31 +186,31 @@ export function TransaksiFilterSheet({
               onValueChange={handleTipeChange}
               className="w-full"
             >
-              <TabsList className="w-full grid grid-cols-4 p-1 bg-surface-strong rounded-[10px] h-11">
+              <TabsList className="w-full grid grid-cols-2 sm:grid-cols-4 gap-1.5 p-1.5 bg-surface-strong rounded-[14px] h-auto">
                 <TabsTrigger
                   value="all"
-                  className="rounded-[8px] text-[11px] sm:text-xs font-medium px-1"
+                  className="h-10 rounded-[10px] text-xs sm:text-sm font-medium transition-all"
                   id="tab-filter-semua"
                 >
                   Semua
                 </TabsTrigger>
                 <TabsTrigger
                   value="expense"
-                  className="rounded-[8px] text-[11px] sm:text-xs font-medium px-1"
+                  className="h-10 rounded-[10px] text-xs sm:text-sm font-medium transition-all"
                   id="tab-filter-pengeluaran"
                 >
                   Pengeluaran
                 </TabsTrigger>
                 <TabsTrigger
                   value="income"
-                  className="rounded-[8px] text-[11px] sm:text-xs font-medium px-1"
+                  className="h-10 rounded-[10px] text-xs sm:text-sm font-medium transition-all"
                   id="tab-filter-pemasukan"
                 >
                   Pemasukan
                 </TabsTrigger>
                 <TabsTrigger
                   value="transfer"
-                  className="rounded-[8px] text-[11px] sm:text-xs font-medium px-1"
+                  className="h-10 rounded-[10px] text-xs sm:text-sm font-medium transition-all"
                   id="tab-filter-transfer"
                 >
                   Transfer
@@ -193,7 +221,7 @@ export function TransaksiFilterSheet({
 
           {/* 2. Filter Transfer: Sumber Dana & Tujuan Transfer (HANYA tampil saat tipe Transfer) */}
           {isTransfer ? (
-            <div className="space-y-4 rounded-xl bg-surface-soft p-4 border border-hairline">
+            <div className="space-y-4 rounded-2xl bg-surface-soft p-4 border border-hairline">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   Alur Transfer
@@ -208,7 +236,7 @@ export function TransaksiFilterSheet({
                         transfer_tujuan_id: undefined,
                       }))
                     }
-                    className="text-xs text-primary hover:underline font-medium"
+                    className="text-xs text-primary hover:underline font-medium cursor-pointer"
                   >
                     Reset Alur
                   </button>
@@ -216,7 +244,10 @@ export function TransaksiFilterSheet({
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="filter-transfer-asal" className="text-xs text-foreground font-medium">
+                <Label
+                  htmlFor="filter-transfer-asal"
+                  className="text-xs text-foreground font-medium"
+                >
                   Sumber Dana (Rekening Asal)
                 </Label>
                 <Select
@@ -228,7 +259,10 @@ export function TransaksiFilterSheet({
                     }))
                   }
                 >
-                  <SelectTrigger id="filter-transfer-asal" className="h-11 rounded-input border-hairline bg-background text-sm">
+                  <SelectTrigger
+                    id="filter-transfer-asal"
+                    className="h-12 rounded-input border-hairline bg-background text-sm"
+                  >
                     <SelectValue placeholder="Semua Sumber Dana" />
                   </SelectTrigger>
                   <SelectContent className="z-60">
@@ -252,7 +286,10 @@ export function TransaksiFilterSheet({
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="filter-transfer-tujuan" className="text-xs text-foreground font-medium">
+                <Label
+                  htmlFor="filter-transfer-tujuan"
+                  className="text-xs text-foreground font-medium"
+                >
                   Tujuan Transfer (Rekening Tujuan)
                 </Label>
                 <Select
@@ -264,7 +301,10 @@ export function TransaksiFilterSheet({
                     }))
                   }
                 >
-                  <SelectTrigger id="filter-transfer-tujuan" className="h-11 rounded-input border-hairline bg-background text-sm">
+                  <SelectTrigger
+                    id="filter-transfer-tujuan"
+                    className="h-12 rounded-input border-hairline bg-background text-sm"
+                  >
                     <SelectValue placeholder="Semua Tujuan" />
                   </SelectTrigger>
                   <SelectContent className="z-60">
@@ -290,7 +330,7 @@ export function TransaksiFilterSheet({
           ) : (
             <>
               {/* 3. Filter Rekening (saat BUKAN transfer) */}
-              <div className="space-y-2">
+              <div className="space-y-2.5">
                 <div className="flex items-center justify-between">
                   <Label className="text-sm font-semibold text-foreground">
                     Rekening
@@ -301,7 +341,7 @@ export function TransaksiFilterSheet({
                       onClick={() =>
                         onFilterChange((prev) => ({ ...prev, rekening_id: [] }))
                       }
-                      className="text-xs text-primary hover:underline font-medium"
+                      className="text-xs text-primary hover:underline font-medium cursor-pointer"
                     >
                       Reset ({selectedRek.length})
                     </button>
@@ -316,19 +356,21 @@ export function TransaksiFilterSheet({
                         type="button"
                         onClick={() => handleToggleRekening(r.id)}
                         className={cn(
-                          "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors cursor-pointer",
+                          "inline-flex items-center gap-2 h-9 px-3.5 py-1.5 rounded-full text-xs font-medium border transition-all cursor-pointer select-none active:scale-95",
                           isSelected
-                            ? "bg-primary text-white border-primary"
-                            : "bg-surface-soft text-foreground border-hairline hover:bg-surface-strong"
+                            ? "bg-primary text-white border-primary shadow-xs"
+                            : "bg-surface-soft text-foreground border-hairline hover:bg-surface-strong",
                         )}
                         id={`filter-rek-${r.id}`}
                       >
                         <span
-                          className="w-2 h-2 rounded-full shrink-0"
-                          style={{ backgroundColor: isSelected ? "#ffffff" : r.warna }}
+                          className="w-2.5 h-2.5 rounded-full shrink-0"
+                          style={{
+                            backgroundColor: isSelected ? "#ffffff" : r.warna,
+                          }}
                         />
                         <span>{r.nama}</span>
-                        {isSelected && <Check className="h-3 w-3 stroke-3" />}
+                        {isSelected && <Check className="h-3.5 w-3.5 stroke-3" />}
                       </button>
                     );
                   })}
@@ -336,7 +378,7 @@ export function TransaksiFilterSheet({
               </div>
 
               {/* 4. Filter Kategori (saat BUKAN transfer) */}
-              <div className="space-y-2">
+              <div className="space-y-2.5">
                 <div className="flex items-center justify-between">
                   <Label className="text-sm font-semibold text-foreground">
                     Kategori
@@ -347,7 +389,7 @@ export function TransaksiFilterSheet({
                       onClick={() =>
                         onFilterChange((prev) => ({ ...prev, kategori_id: [] }))
                       }
-                      className="text-xs text-primary hover:underline font-medium"
+                      className="text-xs text-primary hover:underline font-medium cursor-pointer"
                     >
                       Reset ({selectedKat.length})
                     </button>
@@ -355,16 +397,19 @@ export function TransaksiFilterSheet({
                 </div>
 
                 {kategori.length > 8 && (
-                  <input
-                    type="text"
-                    placeholder="Cari kategori..."
-                    value={kategoriSearch}
-                    onChange={(e) => setKategoriSearch(e.target.value)}
-                    className="w-full h-9 px-3 rounded-input border border-hairline bg-background text-xs placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
-                  />
+                  <div className="relative w-full">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+                    <input
+                      type="text"
+                      placeholder="Cari kategori..."
+                      value={kategoriSearch}
+                      onChange={(e) => setKategoriSearch(e.target.value)}
+                      className="w-full h-10 pl-9 pr-3 rounded-input border border-hairline bg-background text-xs placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
+                    />
+                  </div>
                 )}
 
-                <div className="flex flex-wrap gap-1.5 max-h-44 overflow-y-auto p-0.5">
+                <div className="flex flex-wrap gap-1.5 max-h-56 sm:max-h-48 overflow-y-auto p-0.5">
                   {filteredKategori.map((k) => {
                     const isSelected = selectedKat.includes(k.id);
                     return (
@@ -373,16 +418,16 @@ export function TransaksiFilterSheet({
                         type="button"
                         onClick={() => handleToggleKategori(k.id)}
                         className={cn(
-                          "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors cursor-pointer",
+                          "inline-flex items-center gap-1.5 h-9 px-3.5 py-1.5 rounded-full text-xs font-medium border transition-all cursor-pointer select-none active:scale-95",
                           isSelected
-                            ? "bg-primary text-white border-primary"
-                            : "bg-surface-soft text-foreground border-hairline hover:bg-surface-strong"
+                            ? "bg-primary text-white border-primary shadow-xs"
+                            : "bg-surface-soft text-foreground border-hairline hover:bg-surface-strong",
                         )}
                         id={`filter-kat-${k.id}`}
                       >
                         <span>{k.ikon}</span>
                         <span>{k.nama}</span>
-                        {isSelected && <Check className="h-3 w-3 stroke-3" />}
+                        {isSelected && <Check className="h-3.5 w-3.5 stroke-3" />}
                       </button>
                     );
                   })}
@@ -412,15 +457,15 @@ export function TransaksiFilterSheet({
                       nominal_max: undefined,
                     }))
                   }
-                  className="text-xs text-primary hover:underline font-medium"
+                  className="text-xs text-primary hover:underline font-medium cursor-pointer"
                 >
                   Reset Nominal
                 </button>
               )}
             </div>
             <div className="grid grid-cols-2 gap-3 items-center">
-              <div className="space-y-1">
-                <span className="text-[11px] text-muted-foreground font-medium">
+              <div className="space-y-1.5">
+                <span className="text-xs text-muted-foreground font-medium">
                   Nominal Minimum
                 </span>
                 <NominalInput
@@ -438,11 +483,11 @@ export function TransaksiFilterSheet({
                             : Number(val),
                     }))
                   }
-                  className="h-11 rounded-input text-sm font-mono border-hairline"
+                  className="h-12 rounded-input text-sm font-mono border-hairline bg-background"
                 />
               </div>
-              <div className="space-y-1">
-                <span className="text-[11px] text-muted-foreground font-medium">
+              <div className="space-y-1.5">
+                <span className="text-xs text-muted-foreground font-medium">
                   Nominal Maksimum
                 </span>
                 <NominalInput
@@ -460,7 +505,7 @@ export function TransaksiFilterSheet({
                             : Number(val),
                     }))
                   }
-                  className="h-11 rounded-input text-sm font-mono border-hairline"
+                  className="h-12 rounded-input text-sm font-mono border-hairline bg-background"
                 />
               </div>
             </div>
@@ -468,8 +513,11 @@ export function TransaksiFilterSheet({
 
           {/* 6. Urutkan (Sort) */}
           <div className="space-y-1.5">
-            <Label htmlFor="filter-sort-select" className="text-sm font-semibold text-foreground">
-              Urutkan
+            <Label
+              htmlFor="filter-sort-select"
+              className="text-sm font-semibold text-foreground"
+            >
+              Urutkan Transaksi
             </Label>
             <Select
               value={`${filter.sortBy ?? "tanggal"}-${filter.sortOrder ?? "desc"}`}
@@ -481,7 +529,10 @@ export function TransaksiFilterSheet({
                 onFilterChange((f) => ({ ...f, sortBy: by, sortOrder: order }));
               }}
             >
-              <SelectTrigger id="filter-sort-select" className="h-11 rounded-input border-hairline bg-background text-sm">
+              <SelectTrigger
+                id="filter-sort-select"
+                className="h-12 rounded-input border-hairline bg-background text-sm"
+              >
                 <SelectValue placeholder="Urutkan" />
               </SelectTrigger>
               <SelectContent className="z-60">
@@ -494,22 +545,23 @@ export function TransaksiFilterSheet({
           </div>
         </div>
 
-        <SheetFooter className="px-6 py-4 border-t border-hairline bg-card shrink-0 flex flex-row items-center justify-between gap-3">
+        {/* Fixed Footer dengan safe-area padding untuk home indicator bar di iOS */}
+        <SheetFooter className="px-5 sm:px-6 py-4 border-t border-hairline bg-card/95 backdrop-blur-sm shrink-0 flex flex-row items-center justify-between gap-3 pb-[max(1rem,env(safe-area-inset-bottom))]">
           <Button
             type="button"
             variant="outline"
             onClick={handleReset}
-            className="rounded-full h-11 px-4 text-xs font-medium border-hairline hover:bg-surface-soft gap-1.5"
+            className="rounded-full h-12 px-5 text-xs font-medium border-hairline hover:bg-surface-soft gap-2 shrink-0 cursor-pointer"
             id="btn-reset-filter-sheet"
           >
             <RotateCcw className="h-3.5 w-3.5" />
-            Reset
+            <span>Reset</span>
           </Button>
 
           <Button
             type="button"
             onClick={() => onOpenChange(false)}
-            className="rounded-full h-11 px-6 bg-primary hover:bg-[#003ecc] text-white font-semibold text-xs transition-colors flex-1"
+            className="rounded-full h-12 px-6 bg-primary hover:bg-[#003ecc] text-white font-semibold text-sm transition-colors flex-1 cursor-pointer shadow-sm"
             id="btn-apply-filter-sheet"
           >
             Terapkan Filter
