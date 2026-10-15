@@ -88,6 +88,7 @@ Initial data diambil di Server Component dengan:
   - Urutkan: dropdown pilihan pengurutan transaksi (Terbaru, Terlama, Terbesar, Terkecil).
 - Badge Filter Aktif: setiap filter yang dipilih ditampilkan di bawah baris pencarian sebagai badge pill yang dapat ditutup satu per satu tanpa harus membuka panel filter.
 - Tombol "Hapus Semua" tersedia di samping badge aktif untuk menghapus seluruh filter aktif sekaligus.
+- Pada daftar transaksi di mobile, metadata tanggal dan waktu dijaga tetap utuh (`whitespace-nowrap`). Khusus transaksi bertipe Transfer, alur perpindahan dana (`Rekening Asal → Rekening Tujuan`) ditampilkan pada baris terpisah di bawah baris waktu dengan `truncate` otomatis. Hal ini mencegah teks nama rekening dan simbol panah/titik pecah menjadi kolom-kolom bertumpuk yang berantakan pada layar ponsel yang sempit.
 - Query `?new=true` membuka dialog transaksi baru otomatis.
 - Dialog mendukung mode create, edit, copy, dan correction readonly behavior.
 - Dialog mobile dipusatkan di area aman dan memisahkan frame tetap dari scroll container form. Struktur ini menjaga tombol aksi tetap normal setelah momentum scroll cepat di iOS/PWA.

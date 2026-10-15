@@ -89,7 +89,7 @@ describe("TransaksiFilterBar Component", () => {
     );
 
     expect(
-      screen.getByPlaceholderText(/Cari judul, catatan, atau kategori.../i)
+      screen.getByPlaceholderText(/Cari judul, atau catatan.../i)
     ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Filter/i })).toBeInTheDocument();
     expect(
