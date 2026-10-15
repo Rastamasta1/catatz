@@ -52,6 +52,10 @@ export type TransaksiFilter = {
   tipe?: TipeTransaksi[];      // kosong = semua tipe
   rekening_id?: string[];      // kosong = semua rekening
   kategori_id?: string[];      // kosong = semua kategori
+  nominal_min?: number | null;
+  nominal_max?: number | null;
+  transfer_asal_id?: string | null;
+  transfer_tujuan_id?: string | null;
   dari?: string;
   sampai?: string;
   q?: string;

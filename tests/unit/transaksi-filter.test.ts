@@ -191,4 +191,113 @@ describe("useTransaksiFilter - Rekening Transfer Accounting", () => {
     // Only transfer transactions involving rek-b: tx-3 and tx-4
     expect(txIds).toEqual(["tx-4", "tx-3"]);
   });
+
+  it("filters correctly by nominal_min", () => {
+    const { result } = renderHook(() => useTransaksiFilter(baseParams));
+
+    act(() => {
+      result.current.setFilter((prev) => ({
+        ...prev,
+        nominal_min: 1000000,
+      }));
+    });
+
+    // tx-1 (5.000.000) and tx-3 (1.000.000)
+    const txIds = result.current.filtered.map((t) => t.id);
+    expect(txIds).toContain("tx-1");
+    expect(txIds).toContain("tx-3");
+    expect(txIds).not.toContain("tx-2"); // 200.000
+    expect(txIds).not.toContain("tx-4"); // 500.000
+    expect(txIds).not.toContain("tx-5"); // 50.000
+    expect(txIds).not.toContain("tx-6"); // 300.000
+    expect(result.current.filtered).toHaveLength(2);
+  });
+
+  it("filters correctly by nominal_max", () => {
+    const { result } = renderHook(() => useTransaksiFilter(baseParams));
+
+    act(() => {
+      result.current.setFilter((prev) => ({
+        ...prev,
+        nominal_max: 300000,
+      }));
+    });
+
+    // tx-2 (200.000), tx-5 (50.000), tx-6 (300.000)
+    const txIds = result.current.filtered.map((t) => t.id);
+    expect(txIds).toContain("tx-2");
+    expect(txIds).toContain("tx-5");
+    expect(txIds).toContain("tx-6");
+    expect(txIds).not.toContain("tx-1"); // 5.000.000
+    expect(txIds).not.toContain("tx-3"); // 1.000.000
+    expect(txIds).not.toContain("tx-4"); // 500.000
+    expect(result.current.filtered).toHaveLength(3);
+  });
+
+  it("filters correctly by nominal range (min and max)", () => {
+    const { result } = renderHook(() => useTransaksiFilter(baseParams));
+
+    act(() => {
+      result.current.setFilter((prev) => ({
+        ...prev,
+        nominal_min: 300000,
+        nominal_max: 1000000,
+      }));
+    });
+
+    // tx-3 (1.000.000), tx-4 (500.000), tx-6 (300.000)
+    const txIds = result.current.filtered.map((t) => t.id);
+    expect(txIds).toEqual(["tx-6", "tx-4", "tx-3"]);
+  });
+
+  it("filters correctly by transfer_asal_id (Sumber Dana)", () => {
+    const { result } = renderHook(() => useTransaksiFilter(baseParams));
+
+    act(() => {
+      result.current.setFilter((prev) => ({
+        ...prev,
+        tipe: ["transfer"],
+        transfer_asal_id: "rek-a",
+      }));
+    });
+
+    // Only tx-3 (rek-a -> rek-b)
+    const txIds = result.current.filtered.map((t) => t.id);
+    expect(txIds).toEqual(["tx-3"]);
+  });
+
+  it("filters correctly by transfer_tujuan_id (Tujuan Transfer)", () => {
+    const { result } = renderHook(() => useTransaksiFilter(baseParams));
+
+    act(() => {
+      result.current.setFilter((prev) => ({
+        ...prev,
+        tipe: ["transfer"],
+        transfer_tujuan_id: "rek-a",
+      }));
+    });
+
+    // Only tx-4 (rek-b -> rek-a)
+    const txIds = result.current.filtered.map((t) => t.id);
+    expect(txIds).toEqual(["tx-4"]);
+  });
+
+  it("filters correctly when combining transfer_asal_id, transfer_tujuan_id, and nominal range", () => {
+    const { result } = renderHook(() => useTransaksiFilter(baseParams));
+
+    act(() => {
+      result.current.setFilter((prev) => ({
+        ...prev,
+        tipe: ["transfer"],
+        transfer_asal_id: "rek-c",
+        transfer_tujuan_id: "rek-d",
+        nominal_min: 200000,
+        nominal_max: 500000,
+      }));
+    });
+
+    // tx-6 (rek-c -> rek-d, 300.000)
+    const txIds = result.current.filtered.map((t) => t.id);
+    expect(txIds).toEqual(["tx-6"]);
+  });
 });

@@ -1,27 +1,15 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import type { Rekening } from "@/types/rekening";
 import type { Kategori, TransaksiFilter, TipeTransaksi } from "@/types/transaksi";
 import { Button } from "@/components/ui/button";
 import { ClearableInput } from "@/components/common/clearable-input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
-import { ChevronDown, Plus, Search } from "lucide-react";
+import { Plus, Search, SlidersHorizontal, X } from "lucide-react";
+import { TransaksiFilterSheet } from "./transaksi-filter-sheet";
+import { useSystemPreferences } from "@/providers/system-preference-provider";
 
 export type TransaksiFilterBarProps = {
   search: string;
@@ -33,31 +21,12 @@ export type TransaksiFilterBarProps = {
   onAddClick: () => void;
 };
 
-/* ------------------------------------------------------------------ */
-/*  Helper: toggle item di dalam array                                 */
-/* ------------------------------------------------------------------ */
-function toggleArrayItem<T>(arr: T[] | undefined, item: T): T[] {
-  const current = arr ?? [];
-  return current.includes(item)
-    ? current.filter((i) => i !== item)
-    : [...current, item];
-}
-
-/* ------------------------------------------------------------------ */
-/*  Tipe options                                                       */
-/* ------------------------------------------------------------------ */
-const TIPE_OPTIONS: { value: TipeTransaksi; label: string }[] = [
-  { value: "income", label: "Pemasukan" },
-  { value: "expense", label: "Pengeluaran" },
-  { value: "transfer", label: "Transfer" },
-  { value: "correction", label: "Koreksi Saldo" },
-];
-
-/* ------------------------------------------------------------------ */
-/*  Shared trigger className                                           */
-/* ------------------------------------------------------------------ */
-const triggerClassName =
-  "flex h-12 w-full items-center justify-between gap-1 rounded-input border border-hairline bg-background px-3 py-2 text-sm text-foreground transition-colors hover:bg-surface-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:bg-card [&>svg]:shrink-0 [&>svg]:text-muted-foreground";
+const TIPE_MAP: Record<TipeTransaksi, string> = {
+  income: "Pemasukan",
+  expense: "Pengeluaran",
+  transfer: "Transfer",
+  correction: "Koreksi Saldo",
+};
 
 export function TransaksiFilterBar({
   search,
@@ -68,35 +37,116 @@ export function TransaksiFilterBar({
   kategori,
   onAddClick,
 }: TransaksiFilterBarProps) {
-  /* ---- tipe helpers ---- */
-  const selectedTipe = filter.tipe ?? [];
-  const tipeLabel =
-    selectedTipe.length === 0
-      ? "Semua Tipe"
-      : selectedTipe.length === 1
-        ? TIPE_OPTIONS.find((o) => o.value === selectedTipe[0])?.label ?? "Tipe"
-        : `Tipe`;
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const { formatRupiah } = useSystemPreferences();
 
-  /* ---- rekening helpers ---- */
-  const selectedRek = filter.rekening_id ?? [];
-  const rekLabel =
-    selectedRek.length === 0
-      ? "Semua Rekening"
-      : selectedRek.length === 1
-        ? rekening.find((r) => r.id === selectedRek[0])?.nama ?? "Rekening"
-        : `Rekening`;
+  // Hitung jumlah filter yang sedang aktif
+  const activeFilterCount = useMemo(() => {
+    let count = 0;
+    if (filter.tipe && filter.tipe.length > 0) count += 1;
+    if (filter.transfer_asal_id) count += 1;
+    if (filter.transfer_tujuan_id) count += 1;
+    if (filter.rekening_id && filter.rekening_id.length > 0)
+      count += filter.rekening_id.length;
+    if (filter.kategori_id && filter.kategori_id.length > 0)
+      count += filter.kategori_id.length;
+    if (
+      (filter.nominal_min !== undefined &&
+        filter.nominal_min !== null &&
+        filter.nominal_min > 0) ||
+      (filter.nominal_max !== undefined &&
+        filter.nominal_max !== null &&
+        filter.nominal_max > 0)
+    ) {
+      count += 1;
+    }
+    if (
+      filter.sortBy &&
+      (filter.sortBy !== "tanggal" || filter.sortOrder !== "desc")
+    ) {
+      count += 1;
+    }
+    return count;
+  }, [filter]);
 
-  /* ---- kategori helpers ---- */
-  const selectedKat = filter.kategori_id ?? [];
-  const katLabel =
-    selectedKat.length === 0
-      ? "Semua Kategori"
-      : selectedKat.length === 1
-        ? kategori.find((k) => k.id === selectedKat[0])?.nama ?? "Kategori"
-        : `Kategori`;
+  // Hapus semua filter aktif
+  const handleClearAll = () => {
+    onFilterChange((prev) => ({
+      ...prev,
+      tipe: [],
+      rekening_id: [],
+      kategori_id: [],
+      nominal_min: undefined,
+      nominal_max: undefined,
+      transfer_asal_id: undefined,
+      transfer_tujuan_id: undefined,
+      sortBy: "tanggal",
+      sortOrder: "desc",
+    }));
+  };
+
+  // Handler penghapusan badge individual
+  const removeTipe = () => {
+    onFilterChange((prev) => ({
+      ...prev,
+      tipe: [],
+      transfer_asal_id: undefined,
+      transfer_tujuan_id: undefined,
+    }));
+  };
+
+  const removeTransferAsal = () => {
+    onFilterChange((prev) => ({ ...prev, transfer_asal_id: undefined }));
+  };
+
+  const removeTransferTujuan = () => {
+    onFilterChange((prev) => ({ ...prev, transfer_tujuan_id: undefined }));
+  };
+
+  const removeRekening = (id: string) => {
+    onFilterChange((prev) => ({
+      ...prev,
+      rekening_id: (prev.rekening_id ?? []).filter((item) => item !== id),
+    }));
+  };
+
+  const removeKategori = (id: string) => {
+    onFilterChange((prev) => ({
+      ...prev,
+      kategori_id: (prev.kategori_id ?? []).filter((item) => item !== id),
+    }));
+  };
+
+  const removeNominal = () => {
+    onFilterChange((prev) => ({
+      ...prev,
+      nominal_min: undefined,
+      nominal_max: undefined,
+    }));
+  };
+
+  const removeSort = () => {
+    onFilterChange((prev) => ({
+      ...prev,
+      sortBy: "tanggal",
+      sortOrder: "desc",
+    }));
+  };
+
+  // Label rekening transfer
+  const transferAsalRek = useMemo(
+    () => rekening.find((r) => r.id === filter.transfer_asal_id),
+    [rekening, filter.transfer_asal_id],
+  );
+
+  const transferTujuanRek = useMemo(
+    () => rekening.find((r) => r.id === filter.transfer_tujuan_id),
+    [rekening, filter.transfer_tujuan_id],
+  );
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-2.5">
+      {/* ── Baris 1: Search + Tombol Filter + Transaksi Baru ── */}
       <div className="flex flex-col sm:flex-row gap-2">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -106,194 +156,241 @@ export function TransaksiFilterBar({
             onChange={(e) => onSearchChange(e.target.value)}
             onClear={() => onSearchChange("")}
             className="pl-9"
+            id="input-cari-transaksi"
           />
         </div>
-        <Button
-          onClick={onAddClick}
-          className="h-12 px-5 bg-primary hover:bg-[#003ecc] text-white rounded-full font-semibold gap-2 shrink-0 transition-colors"
-          id="btn-tambah-transaksi"
-        >
-          <Plus className="h-4 w-4" />
-          Transaksi Baru
-        </Button>
-      </div>
 
-      <div className="grid w-full grid-cols-2 gap-2 sm:grid-cols-4">
-        {/* ── Sort (tetap single-select) ── */}
-        <Select
-          value={`${filter.sortBy}-${filter.sortOrder}`}
-          onValueChange={(v) => {
-            const [by, order] = v.split("-") as [
-              TransaksiFilter["sortBy"],
-              TransaksiFilter["sortOrder"],
-            ];
-            onFilterChange((f) => ({ ...f, sortBy: by, sortOrder: order }));
-          }}
-        >
-          <SelectTrigger
-            size="sm"
-            className="h-12! min-w-0 text-sm text-foreground border-hairline"
-            id="filter-sort"
+        <div className="flex items-center gap-2 shrink-0">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setSheetOpen(true)}
+            className="h-12 flex-1 sm:flex-none px-4 rounded-full border border-hairline bg-background hover:bg-surface-soft font-medium text-sm flex items-center justify-center gap-2 shrink-0 transition-colors"
+            id="btn-filter-trigger"
           >
-            <SelectValue placeholder="Urutkan" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="tanggal-desc">
-              {"\uD83D\uDCC5 Terbaru"}
-            </SelectItem>
-            <SelectItem value="tanggal-asc">
-              {"\uD83D\uDCC5 Terlama"}
-            </SelectItem>
-            <SelectItem value="nominal-desc">
-              {"\uD83D\uDCB0 Terbesar"}
-            </SelectItem>
-            <SelectItem value="nominal-asc">
-              {"\uD83D\uDCB0 Terkecil"}
-            </SelectItem>
-          </SelectContent>
-        </Select>
-
-        {/* ── Tipe (multi-select) ── */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button
-              type="button"
-              className={triggerClassName}
-              id="filter-tipe"
-            >
-              <span className="flex items-center gap-1.5 truncate">
-                <span className="truncate">{tipeLabel}</span>
-                {selectedTipe.length > 0 && (
-                  <Badge
-                    variant="secondary"
-                    className="text-[10px] px-1.5 py-0 h-4 min-w-4 flex items-center justify-center"
-                  >
-                    {selectedTipe.length}
-                  </Badge>
-                )}
-              </span>
-              <ChevronDown className="h-4 w-4 opacity-50" />
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="min-w-48">
-            <DropdownMenuLabel>Tipe Transaksi</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            {TIPE_OPTIONS.map((opt) => (
-              <DropdownMenuCheckboxItem
-                key={opt.value}
-                checked={selectedTipe.includes(opt.value)}
-                onCheckedChange={() =>
-                  onFilterChange((f) => ({
-                    ...f,
-                    tipe: toggleArrayItem(f.tipe, opt.value),
-                  }))
-                }
-                onSelect={(e) => e.preventDefault()}
+            <SlidersHorizontal className="h-4 w-4 text-muted-foreground" />
+            <span>Filter</span>
+            {activeFilterCount > 0 && (
+              <Badge
+                variant="secondary"
+                className="bg-primary text-white hover:bg-primary rounded-full text-[11px] px-1.5 py-0 min-w-5 h-5 flex items-center justify-center font-mono font-medium"
+                id="badge-filter-count"
               >
-                {opt.label}
-              </DropdownMenuCheckboxItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
+                {activeFilterCount}
+              </Badge>
+            )}
+          </Button>
 
-        {/* ── Rekening (multi-select) ── */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button
-              type="button"
-              className={triggerClassName}
-              id="filter-rekening"
-            >
-              <span className="flex items-center gap-1.5 truncate">
-                <span className="truncate">{rekLabel}</span>
-                {selectedRek.length > 0 && (
-                  <Badge
-                    variant="secondary"
-                    className="text-[10px] px-1.5 py-0 h-4 min-w-4 flex items-center justify-center"
-                  >
-                    {selectedRek.length}
-                  </Badge>
-                )}
-              </span>
-              <ChevronDown className="h-4 w-4 opacity-50" />
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="min-w-48">
-            <DropdownMenuLabel>Rekening</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            {rekening.map((r) => (
-              <DropdownMenuCheckboxItem
-                key={r.id}
-                checked={selectedRek.includes(r.id)}
-                onCheckedChange={() =>
-                  onFilterChange((f) => ({
-                    ...f,
-                    rekening_id: toggleArrayItem(f.rekening_id, r.id),
-                  }))
-                }
-                onSelect={(e) => e.preventDefault()}
-              >
-                <span className="flex items-center gap-2">
-                  <span
-                    className="w-2.5 h-2.5 rounded-full shrink-0"
-                    style={{ background: r.warna }}
-                  />
-                  {r.nama}
-                  <span className="text-muted-foreground text-xs ml-1 font-normal">
-                    ({r.jenis})
-                  </span>
-                </span>
-              </DropdownMenuCheckboxItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
-
-        {/* ── Kategori (multi-select, baru) ── */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button
-              type="button"
-              className={triggerClassName}
-              id="filter-kategori"
-            >
-              <span className="flex items-center gap-1.5 truncate">
-                <span className="truncate">{katLabel}</span>
-                {selectedKat.length > 0 && (
-                  <Badge
-                    variant="secondary"
-                    className="text-[10px] px-1.5 py-0 h-4 min-w-4 flex items-center justify-center"
-                  >
-                    {selectedKat.length}
-                  </Badge>
-                )}
-              </span>
-              <ChevronDown className="h-4 w-4 opacity-50" />
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="min-w-48 max-h-64 overflow-y-auto">
-            <DropdownMenuLabel>Kategori</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            {kategori.map((k) => (
-              <DropdownMenuCheckboxItem
-                key={k.id}
-                checked={selectedKat.includes(k.id)}
-                onCheckedChange={() =>
-                  onFilterChange((f) => ({
-                    ...f,
-                    kategori_id: toggleArrayItem(f.kategori_id, k.id),
-                  }))
-                }
-                onSelect={(e) => e.preventDefault()}
-              >
-                <span className="flex items-center gap-2">
-                  <span>{k.ikon}</span>
-                  {k.nama}
-                </span>
-              </DropdownMenuCheckboxItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
+          <Button
+            type="button"
+            onClick={onAddClick}
+            className="h-12 flex-1 sm:flex-none px-5 bg-primary hover:bg-[#003ecc] text-white rounded-full font-semibold gap-2 shrink-0 transition-colors"
+            id="btn-tambah-transaksi"
+          >
+            <Plus className="h-4 w-4" />
+            Transaksi Baru
+          </Button>
+        </div>
       </div>
+
+      {/* ── Baris 2: Badge Filter Aktif (muncul ketika ada filter aktif) ── */}
+      {activeFilterCount > 0 && (
+        <div
+          className="flex flex-wrap items-center gap-1.5 pt-0.5"
+          id="active-filter-badges"
+        >
+          {/* Badge Tipe */}
+          {filter.tipe && filter.tipe.length > 0 && (
+            <span
+              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-surface-strong text-foreground border border-hairline transition-colors"
+              id="badge-filter-tipe"
+            >
+              <span>
+                Tipe:{" "}
+                {filter.tipe.length === 1
+                  ? TIPE_MAP[filter.tipe[0]] ?? filter.tipe[0]
+                  : `${filter.tipe.length} dipilih`}
+              </span>
+              <button
+                type="button"
+                onClick={removeTipe}
+                className="hover:text-semantic-down text-muted-foreground transition-colors p-0.5 rounded-full cursor-pointer"
+                aria-label="Hapus filter tipe"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </span>
+          )}
+
+          {/* Badge Sumber Dana Transfer */}
+          {filter.transfer_asal_id && (
+            <span
+              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-surface-strong text-foreground border border-hairline transition-colors"
+              id="badge-filter-transfer-asal"
+            >
+              <span className="flex items-center gap-1">
+                Sumber Dana: {transferAsalRek?.nama ?? "Rekening"}
+              </span>
+              <button
+                type="button"
+                onClick={removeTransferAsal}
+                className="hover:text-semantic-down text-muted-foreground transition-colors p-0.5 rounded-full cursor-pointer"
+                aria-label="Hapus filter sumber dana"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </span>
+          )}
+
+          {/* Badge Rekening Tujuan Transfer */}
+          {filter.transfer_tujuan_id && (
+            <span
+              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-surface-strong text-foreground border border-hairline transition-colors"
+              id="badge-filter-transfer-tujuan"
+            >
+              <span className="flex items-center gap-1">
+                Rekening Tujuan: {transferTujuanRek?.nama ?? "Rekening"}
+              </span>
+              <button
+                type="button"
+                onClick={removeTransferTujuan}
+                className="hover:text-semantic-down text-muted-foreground transition-colors p-0.5 rounded-full cursor-pointer"
+                aria-label="Hapus filter rekening tujuan"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </span>
+          )}
+
+          {/* Badge Rekening Umum */}
+          {filter.rekening_id?.map((rekId) => {
+            const rek = rekening.find((r) => r.id === rekId);
+            return (
+              <span
+                key={rekId}
+                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-surface-strong text-foreground border border-hairline transition-colors"
+                id={`badge-filter-rek-${rekId}`}
+              >
+                <span
+                  className="w-2 h-2 rounded-full shrink-0"
+                  style={{ backgroundColor: rek?.warna }}
+                />
+                <span>Rekening: {rek?.nama ?? "Rekening"}</span>
+                <button
+                  type="button"
+                  onClick={() => removeRekening(rekId)}
+                  className="hover:text-semantic-down text-muted-foreground transition-colors p-0.5 rounded-full cursor-pointer"
+                  aria-label={`Hapus filter rekening ${rek?.nama}`}
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </span>
+            );
+          })}
+
+          {/* Badge Kategori */}
+          {filter.kategori_id?.map((katId) => {
+            const kat = kategori.find((k) => k.id === katId);
+            return (
+              <span
+                key={katId}
+                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-surface-strong text-foreground border border-hairline transition-colors"
+                id={`badge-filter-kat-${katId}`}
+              >
+                {kat?.ikon && <span>{kat.ikon}</span>}
+                <span>Kategori: {kat?.nama ?? "Kategori"}</span>
+                <button
+                  type="button"
+                  onClick={() => removeKategori(katId)}
+                  className="hover:text-semantic-down text-muted-foreground transition-colors p-0.5 rounded-full cursor-pointer"
+                  aria-label={`Hapus filter kategori ${kat?.nama}`}
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </span>
+            );
+          })}
+
+          {/* Badge Rentang Nominal */}
+          {((filter.nominal_min !== undefined &&
+            filter.nominal_min !== null &&
+            filter.nominal_min > 0) ||
+            (filter.nominal_max !== undefined &&
+              filter.nominal_max !== null &&
+              filter.nominal_max > 0)) && (
+            <span
+              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-surface-strong text-foreground border border-hairline transition-colors font-mono"
+              id="badge-filter-nominal"
+            >
+              <span>
+                {filter.nominal_min && filter.nominal_max
+                  ? `Nominal: ${formatRupiah(filter.nominal_min)} - ${formatRupiah(filter.nominal_max)}`
+                  : filter.nominal_min
+                    ? `Nominal: ≥ ${formatRupiah(filter.nominal_min)}`
+                    : `Nominal: ≤ ${formatRupiah(filter.nominal_max!)}`}
+              </span>
+              <button
+                type="button"
+                onClick={removeNominal}
+                className="hover:text-semantic-down text-muted-foreground transition-colors p-0.5 rounded-full cursor-pointer"
+                aria-label="Hapus filter rentang nominal"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </span>
+          )}
+
+          {/* Badge Urutan (jika bukan default terbaru) */}
+          {filter.sortBy &&
+            (filter.sortBy !== "tanggal" || filter.sortOrder !== "desc") && (
+              <span
+                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-surface-strong text-foreground border border-hairline transition-colors"
+                id="badge-filter-sort"
+              >
+                <span>
+                  Urutan:{" "}
+                  {filter.sortBy === "nominal"
+                    ? filter.sortOrder === "asc"
+                      ? "Nominal Terkecil"
+                      : "Nominal Terbesar"
+                    : filter.sortBy === "tanggal" && filter.sortOrder === "asc"
+                      ? "Terlama"
+                      : "Kustom"}
+                </span>
+                <button
+                  type="button"
+                  onClick={removeSort}
+                  className="hover:text-semantic-down text-muted-foreground transition-colors p-0.5 rounded-full cursor-pointer"
+                  aria-label="Reset urutan ke default"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </span>
+            )}
+
+          {/* Tombol Hapus Semua */}
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={handleClearAll}
+            className="h-7 px-2.5 text-xs text-muted-foreground hover:text-semantic-down rounded-full font-medium cursor-pointer"
+            id="btn-hapus-semua-filter"
+          >
+            Hapus Semua
+          </Button>
+        </div>
+      )}
+
+      {/* ── Sheet Filter Panel ── */}
+      <TransaksiFilterSheet
+        open={sheetOpen}
+        onOpenChange={setSheetOpen}
+        filter={filter}
+        onFilterChange={onFilterChange}
+        rekening={rekening}
+        kategori={kategori}
+      />
     </div>
   );
 }
