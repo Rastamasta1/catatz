@@ -7,8 +7,11 @@ catatz/
 ├── .agents/skills/          # canonical Agent Skills
 ├── .claude/                 # Claude agents, wrappers, hooks, settings
 ├── .codex/                  # Codex agents, hooks, config, MCP declaration
+├── .codegraph/              # CodeGraph AST knowledge graph index lokal
 ├── .ecc/                    # manifest dan shared hook implementation
+├── .gemini/                 # Gemini CLI local settings / MCP
 ├── .github/workflows/       # CI quality dan E2E
+├── .vscode/                 # VS Code local MCP configuration
 ├── public/
 │   ├── icons/
 │   ├── manifest.json
@@ -65,10 +68,13 @@ catatz/
 - `tests/unit`: unit test Vitest untuk helper, policy hook, dan modul pure.
 - `.agents/skills`: canonical skills, termasuk skills Supabase dan subset ECC yang relevan.
 - `.claude`: project agents read-only, skill wrappers, dan hook adapter untuk Claude Code.
-- `.codex`: project agents read-only, hook lifecycle, serta konfigurasi Chrome DevTools MCP untuk Codex.
+- `.codex`: project agents read-only, hook lifecycle, serta konfigurasi Chrome DevTools dan CodeGraph MCP untuk Codex.
+- `.codegraph`: indeks knowledge graph SQLite lokal untuk code intelligence (file database diabaikan oleh `.codegraph/.gitignore`).
+- `.gemini`: konfigurasi local MCP server untuk Gemini CLI (`settings.json`).
+- `.vscode`: konfigurasi MCP server local untuk VS Code / Copilot (`mcp.json`).
 - `.ecc`: manifest instalasi dan shared hook implementation. `.ecc/runtime` bersifat lokal dan diabaikan Git.
 - `.github/workflows`: CI lint, typecheck, unit coverage, dan build.
-- `AGENTS.md`: instruksi repository-level lintas agent, documentation gate, ECC workflow, final response, dan suggested Conventional Commit message.
+- `AGENTS.md`: instruksi repository-level lintas agent, documentation gate, ECC workflow, CodeGraph guidelines, final response, dan suggested Conventional Commit message.
 
 ## Routing
 

@@ -53,7 +53,9 @@ Prompt, tool arguments, transcript, isi file, secret, dan payload finansial tida
 
 ## MCP dan Database
 
-Connector project yang diizinkan hanya `chrome-devtools-mcp@1.2.0`. GitHub tetap menggunakan `gh`. Supabase menggunakan SDK/CLI dan skills yang tersedia. Jangan menambahkan Supabase MCP atau menghubungkan test ke project production.
+Connector project yang diizinkan adalah `chrome-devtools-mcp@1.2.0` dan `codegraph` (local knowledge graph AST code intelligence). GitHub tetap menggunakan `gh`. Supabase menggunakan SDK/CLI dan skills yang tersedia. Jangan menambahkan Supabase MCP atau menghubungkan test ke project production.
+
+CodeGraph diinisialisasi melalui direktori `.codegraph/` di root repository. Agen dapat memanfaatkan MCP tool `codegraph_explore` atau perintah shell `codegraph explore "<query>"` untuk menavigasi simbol, call graph, dan dynamic dispatch sebelum membaca atau mengedit file.
 
 ## Aktivasi Harness
 
