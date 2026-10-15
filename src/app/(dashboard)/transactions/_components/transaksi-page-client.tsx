@@ -241,6 +241,13 @@ export default function TransaksiPageClient({
     setDialogOpen(true);
   }
 
+  function handleCopy(t: DisplayTransaksi) {
+    setSelectedDetailId(null);
+    setEditData(null);
+    setCopyFrom(t);
+    setDialogOpen(true);
+  }
+
   return (
     <div className="w-full max-w-5xl mx-auto space-y-6">
       {/* Header */}
@@ -337,6 +344,7 @@ export default function TransaksiPageClient({
           setSelectedDetailId(null);
           handleDelete(id);
         }}
+        onCopy={handleCopy}
       />
 
       <TransaksiDialog

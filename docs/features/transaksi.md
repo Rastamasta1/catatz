@@ -12,16 +12,12 @@ Fitur transaksi digunakan untuk mencatat pemasukan, pengeluaran, transfer antar 
 
 - `/transactions`
 - Shortcut PWA: `/transactions?new=true`
-- Detail Transaksi: `/transactions/[id]` (menggunakan UUID transaksi)
 
 ## Lokasi File
 
 - Page: `src/app/(dashboard)/transactions/page.tsx`
 - Loading: `src/app/(dashboard)/transactions/loading.tsx`
 - Client page: `src/app/(dashboard)/transactions/_components/transaksi-page-client.tsx`
-- Detail Page: `src/app/(dashboard)/transactions/[id]/page.tsx`
-- Detail Loading: `src/app/(dashboard)/transactions/[id]/loading.tsx`
-- Detail Client: `src/app/(dashboard)/transactions/[id]/_components/transaksi-detail-client.tsx`
 - Detail Content Presentational: `src/app/(dashboard)/transactions/_components/transaksi-detail-content.tsx`
 - Detail Sheet Drawer: `src/app/(dashboard)/transactions/_components/transaksi-detail-sheet.tsx`
 - Detail Helper: `src/lib/transaksi-detail.ts`
@@ -49,7 +45,7 @@ Fitur transaksi digunakan untuk mencatat pemasukan, pengeluaran, transfer antar 
 
 Initial data diambil di Server Component dengan:
 
-- `getTransaksi()` (atau `getTransaksiById(id)` untuk route detail)
+- `getTransaksi()`
 - `getRekening()`
 - `getKategori()`
 
@@ -127,13 +123,8 @@ Initial data diambil di Server Component dengan:
   - Untuk transaksi non-transfer, informasi Rekening, Judul (jika ada), dan Kategori (jika ada) disatukan dalam satu card metadata.
   - Bagian Catatan dan Tag disajikan di card terpisah, sedangkan ID Referensi transaksi diletakkan rapi di posisi paling bawah.
   - Tag sistem internal (`correction_add`, `correction_sub`) otomatis disaring dari UI dan dimanfaatkan untuk menentukan arah koreksi saldo ("Penambahan" vs "Pengurangan").
-  - Footer drawer menyajikan tombol Buka Halaman Penuh, Edit Transaksi, dan Hapus Transaksi (dilengkapi dialog konfirmasi).
-  - Untuk transaksi pending offline (`_pendingSync: true`), drawer tetap dapat dibuka untuk inspeksi data, namun tombol Edit dan Buka Halaman Penuh dinonaktifkan/disembunyikan guna mencegah 404/konflik server.
-- **Halaman Penuh Detail Transaksi (`/transactions/[id]`)**:
-  - Halaman khusus standalone yang dapat diakses langsung melalui route URL dengan UUID transaksi.
-  - Dilengkapi validasi parameter Zod UUID server-side dan penanganan `notFound()` aman (HTTP 404 seragam untuk data tidak ada maupun data milik pengguna lain guna mencegah eksploitasi IDOR/enumerasi).
-  - Memiliki tombol navigasi kembali ke `/transactions`, tombol Salin Transaksi (mode create prefilled), Edit Transaksi, dan Hapus Transaksi.
-  - Terintegrasi dengan breadcrumb dashboard yang secara cerdas mendeteksi segmen UUID di bawah `transactions` dan melabelinya sebagai "Detail Transaksi".
+  - Footer drawer menyajikan tombol Hapus Transaksi (dilengkapi dialog konfirmasi), Copy Transaksi (membuka modal create yang langsung di-prefill dengan data transaksi untuk duplikasi instan), dan Edit Transaksi sebagai tombol aksi utama.
+  - Untuk transaksi pending offline (`_pendingSync: true`), drawer tetap dapat dibuka untuk inspeksi data, namun tombol Edit dan Copy dinonaktifkan guna mencegah inkonsistensi data lokal.
 
 ## TODO / Improvement
 

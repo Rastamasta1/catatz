@@ -86,7 +86,6 @@ Route aktual:
 /register              -> form register
 /auth/callback         -> Supabase auth callback
 /transactions          -> transaksi
-/transactions/[id]     -> detail transaksi
 /wallets               -> rekening
 /reports               -> laporan/rekap
 /reports/detail        -> detail rekap periode (?dari=...&sampai=...&jenis=...)

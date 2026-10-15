@@ -1,8 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { ExternalLink, Pencil, Trash2, X } from "lucide-react";
-import { toast } from "sonner";
+import { Copy, Pencil, Trash2, X } from "lucide-react";
 import type { DisplayTransaksi } from "@/hooks/use-offline-queue-sync";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
@@ -25,6 +23,7 @@ export type TransaksiDetailSheetProps = {
   transaksi: DisplayTransaksi | null;
   onEdit: (transaksi: DisplayTransaksi) => void;
   onDelete: (id: string) => void;
+  onCopy?: (transaksi: DisplayTransaksi) => void;
 };
 
 export function TransaksiDetailSheet({
@@ -33,30 +32,14 @@ export function TransaksiDetailSheet({
   transaksi,
   onEdit,
   onDelete,
+  onCopy,
 }: TransaksiDetailSheetProps) {
   const isMobile = useIsMobile();
-  const router = useRouter();
 
   if (!transaksi) return null;
 
   const isPendingSync = !!transaksi._pendingSync;
-
-  const handleOpenPage = () => {
-    if (isPendingSync) {
-      toast.info(
-        "Transaksi ini masih dalam antrean offline dan belum tersimpan di server.",
-      );
-      return;
-    }
-    if (typeof navigator !== "undefined" && !navigator.onLine) {
-      toast.error(
-        "Membuka halaman penuh transaksi memerlukan koneksi internet.",
-      );
-      return;
-    }
-    onOpenChange(false);
-    router.push(`/transactions/${transaksi.id}`);
-  };
+  const isCorrection = transaksi.tipe === "correction";
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -104,12 +87,12 @@ export function TransaksiDetailSheet({
           {/* Tombol Hapus */}
           <ConfirmDialog
             title={
-              transaksi.tipe === "correction"
+              isCorrection
                 ? "Hapus Koreksi Saldo?"
                 : "Hapus Transaksi?"
             }
             description={
-              transaksi.tipe === "correction"
+              isCorrection
                 ? "Koreksi saldo ini akan dihapus. Saldo rekening TIDAK akan otomatis dibalik."
                 : "Transaksi ini akan dihapus secara permanen."
             }
@@ -127,32 +110,35 @@ export function TransaksiDetailSheet({
             </Button>
           </ConfirmDialog>
 
-          {/* Tombol Edit */}
+          {/* Tombol Copy Transaksi (hanya jika bukan koreksi) */}
+          {!isCorrection && onCopy && (
+            <Button
+              type="button"
+              variant="outline"
+              disabled={isPendingSync}
+              onClick={() => onCopy(transaksi)}
+              className="rounded-full h-11 px-4 text-xs sm:text-sm font-medium border-hairline hover:bg-surface-soft gap-2 shrink-0 cursor-pointer"
+              id="btn-copy-transaksi-sheet"
+            >
+              <Copy className="h-3.5 w-3.5" />
+              <span>Copy Transaksi</span>
+            </Button>
+          )}
+
+          {/* Tombol Edit Transaksi (CTA Utama) */}
           <Button
             type="button"
-            variant="outline"
             disabled={isPendingSync}
             onClick={() => onEdit(transaksi)}
-            className="rounded-full h-11 px-4 text-xs font-medium border-hairline hover:bg-surface-soft gap-2 shrink-0 cursor-pointer"
+            className="rounded-full h-11 px-4 bg-primary hover:bg-[#003ecc] text-white font-semibold text-xs sm:text-sm transition-colors flex-1 gap-2 cursor-pointer shadow-none truncate"
             id="btn-edit-transaksi-sheet"
           >
-            <Pencil className="h-3.5 w-3.5" />
-            <span>Edit</span>
-          </Button>
-
-          {/* Tombol Buka Halaman Lengkap */}
-          <Button
-            type="button"
-            onClick={handleOpenPage}
-            disabled={isPendingSync}
-            className="rounded-full h-11 px-4 bg-primary hover:bg-[#003ecc] text-white font-semibold text-xs sm:text-sm transition-colors flex-1 gap-1.5 cursor-pointer shadow-none truncate"
-            id="btn-open-full-page"
-          >
-            <ExternalLink className="h-3.5 w-3.5 shrink-0" />
-            <span className="truncate">Halaman Penuh</span>
+            <Pencil className="h-3.5 w-3.5 shrink-0" />
+            <span className="truncate">Edit Transaksi</span>
           </Button>
         </SheetFooter>
       </SheetContent>
     </Sheet>
   );
 }
+

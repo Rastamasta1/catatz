@@ -283,7 +283,6 @@ export async function updateTransaksi(
 
   if (error) return { success: false, error: error.message };
   revalidatePath('/transactions');
-  revalidatePath(`/transactions/${id}`);
   revalidatePath('/wallets');
   revalidatePath('/reports');
   return { success: true, data: data as Transaksi };
@@ -328,7 +327,6 @@ export async function deleteTransaksi(id: string): Promise<ActionResult> {
   const { error } = await supabase.from('transaksi').delete().eq('id', id);
   if (error) return { success: false, error: error.message };
   revalidatePath('/transactions');
-  revalidatePath(`/transactions/${id}`);
   revalidatePath('/wallets');
   revalidatePath('/reports');
   return { success: true };
