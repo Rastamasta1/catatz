@@ -217,33 +217,108 @@ export async function getRekening(): Promise<Rekening[]> {
   return (data as Rekening[]) ?? [];
 }
 
+export async function fetchAllUserTransaksiUsage(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+) {
+  const PAGE_SIZE = 1000;
+  let from = 0;
+  const allRows: { tipe: string; rekening_id: string | null; rekening_tujuan: string | null }[] = [];
+
+  while (true) {
+    const { data, error } = await supabase
+      .from('transaksi')
+      .select('tipe, rekening_id, rekening_tujuan')
+      .eq('user_id', userId)
+      .range(from, from + PAGE_SIZE - 1);
+
+    if (error) throw new Error(error.message);
+    if (!data || data.length === 0) break;
+
+    allRows.push(...data);
+    if (data.length < PAGE_SIZE) break;
+    from += PAGE_SIZE;
+  }
+
+  return allRows;
+}
+
+export async function fetchAllUserHutangUsage(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+) {
+  const PAGE_SIZE = 1000;
+  let from = 0;
+  const allRows: { id: string; rekening_id: string }[] = [];
+
+  while (true) {
+    const { data, error } = await supabase
+      .from('hutang')
+      .select('id, rekening_id')
+      .eq('user_id', userId)
+      .range(from, from + PAGE_SIZE - 1);
+
+    if (error) throw new Error(error.message);
+    if (!data || data.length === 0) break;
+
+    allRows.push(...data);
+    if (data.length < PAGE_SIZE) break;
+    from += PAGE_SIZE;
+  }
+
+  return allRows;
+}
+
+export async function fetchAllHutangCicilanUsage(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  hutangIds: string[],
+) {
+  if (hutangIds.length === 0) return [];
+  const allRows: { rekening_id: string }[] = [];
+  const CHUNK_SIZE = 100;
+  const PAGE_SIZE = 1000;
+
+  for (let i = 0; i < hutangIds.length; i += CHUNK_SIZE) {
+    const chunk = hutangIds.slice(i, i + CHUNK_SIZE);
+    let from = 0;
+    while (true) {
+      const { data, error } = await supabase
+        .from('hutang_cicilan')
+        .select('rekening_id')
+        .in('hutang_id', chunk)
+        .range(from, from + PAGE_SIZE - 1);
+
+      if (error) throw new Error(error.message);
+      if (!data || data.length === 0) break;
+
+      allRows.push(...data);
+      if (data.length < PAGE_SIZE) break;
+      from += PAGE_SIZE;
+    }
+  }
+
+  return allRows;
+}
+
 export async function getRekeningUsageCountsMap(): Promise<Record<string, RekeningUsageCounts>> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return {};
 
-  const [transaksi, hutang, recurring] = await Promise.all([
-    supabase
-      .from('transaksi')
-      .select('tipe, rekening_id, rekening_tujuan')
-      .eq('user_id', user.id),
-    supabase
-      .from('hutang')
-      .select('id, rekening_id')
-      .eq('user_id', user.id),
+  const [transaksiRows, hutangRows, recurring] = await Promise.all([
+    fetchAllUserTransaksiUsage(supabase, user.id),
+    fetchAllUserHutangUsage(supabase, user.id),
     supabase
       .from('recurring_transaksi')
       .select('rekening_id, rekening_tujuan')
       .eq('user_id', user.id),
   ]);
 
-  if (transaksi.error) throw new Error(transaksi.error.message);
-  if (hutang.error) throw new Error(hutang.error.message);
   if (recurring.error) throw new Error(recurring.error.message);
 
   const usageMap: Record<string, RekeningUsageCounts> = {};
 
-  for (const item of transaksi.data ?? []) {
+  for (const item of transaksiRows) {
     if (item.tipe === 'income') {
       incrementUsage(usageMap, item.rekening_id, 'transaksi_masuk');
     } else if (item.tipe === 'expense') {
@@ -262,20 +337,14 @@ export async function getRekeningUsageCountsMap(): Promise<Record<string, Rekeni
     }
   }
 
-  const hutangIds = (hutang.data ?? []).map((item) => item.id);
-  for (const item of hutang.data ?? []) {
+  const hutangIds = hutangRows.map((item) => item.id);
+  for (const item of hutangRows) {
     incrementUsage(usageMap, item.rekening_id, 'hutang');
   }
 
   if (hutangIds.length > 0) {
-    const { data, error } = await supabase
-      .from('hutang_cicilan')
-      .select('rekening_id')
-      .in('hutang_id', hutangIds);
-
-    if (error) throw new Error(error.message);
-
-    for (const item of data ?? []) {
+    const cicilanRows = await fetchAllHutangCicilanUsage(supabase, hutangIds);
+    for (const item of cicilanRows) {
       incrementUsage(usageMap, item.rekening_id, 'hutang_cicilan');
     }
   }
