@@ -26,3 +26,7 @@ config_file = "agents/docs-researcher.toml"
 command = "npx"
 args = ["-y", "chrome-devtools-mcp@1.2.0"]
 startup_timeout_sec = 30
+
+[mcp_servers.codegraph]
+command = "codegraph"
+args = ["serve", "--mcp"]
