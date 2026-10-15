@@ -153,4 +153,131 @@ describe("Rekening Usage Calculation Logic", () => {
     expect(usageMap["rek-a"].total).toBe(1);
     expect(usageMap["rek-a"].transaksi_masuk).toBe(1);
   });
+
+  it("fetches transactions beyond 1000-row PostgREST limit and computes usage correctly", async () => {
+    const { fetchAllUserTransaksiUsage } = await import("@/actions/rekening-action");
+
+    // Simulate 1002 total transactions in DB:
+    // First 1000 transactions are for 'rek-tunai'
+    // 2 newest transactions (index 1000 and 1001) are for 'rek-qris-ks'
+    const page1 = Array.from({ length: 1000 }, () => ({
+      tipe: "expense",
+      rekening_id: "rek-tunai",
+      rekening_tujuan: null,
+    }));
+    const page2 = [
+      { tipe: "transfer", rekening_id: "rek-mandiri", rekening_tujuan: "rek-qris-ks" },
+      { tipe: "transfer", rekening_id: "rek-qris-ks", rekening_tujuan: "rek-shopeepay" },
+    ];
+
+    const mockSupabase = {
+      from: (table: string) => {
+        expect(table).toBe("transaksi");
+        return {
+          select: (columns: string) => {
+            expect(columns).toBe("tipe, rekening_id, rekening_tujuan");
+            return {
+              eq: () => {
+                return {
+                  range: async (from: number, to: number) => {
+                    if (from === 0 && to === 999) {
+                      return { data: page1, error: null };
+                    }
+                    if (from === 1000 && to === 1999) {
+                      return { data: page2, error: null };
+                    }
+                    return { data: [], error: null };
+                  },
+                };
+              },
+            };
+          },
+        };
+      },
+    };
+
+    const results = await fetchAllUserTransaksiUsage(
+      mockSupabase as unknown as Parameters<typeof fetchAllUserTransaksiUsage>[0],
+      "user-123",
+    );
+
+    expect(results).toHaveLength(1002);
+
+    // Compute usage from results
+    const usageMap: Record<string, RekeningUsageCounts> = {};
+    for (const item of results) {
+      if (item.tipe === "income") {
+        incrementUsage(usageMap, item.rekening_id, "transaksi_masuk");
+      } else if (item.tipe === "expense") {
+        incrementUsage(usageMap, item.rekening_id, "transaksi_keluar");
+      } else if (item.tipe === "transfer") {
+        incrementUsage(usageMap, item.rekening_id, "transfer_keluar");
+        incrementUsage(usageMap, item.rekening_tujuan, "transfer_masuk");
+      }
+    }
+
+    expect(usageMap["rek-tunai"].transaksi_keluar).toBe(1000);
+    expect(usageMap["rek-tunai"].total).toBe(1000);
+
+    // Previously dropped in production:
+    expect(usageMap["rek-qris-ks"]).toBeDefined();
+    expect(usageMap["rek-qris-ks"].transfer_masuk).toBe(1);
+    expect(usageMap["rek-qris-ks"].transfer_keluar).toBe(1);
+    expect(usageMap["rek-qris-ks"].total).toBe(2);
+  });
+
+  it("paginates hutang and cicilan usage queries properly", async () => {
+    const { fetchAllUserHutangUsage, fetchAllHutangCicilanUsage } = await import(
+      "@/actions/rekening-action"
+    );
+
+    const mockHutangData = Array.from({ length: 1005 }, (_, i) => ({
+      id: `hutang-${i}`,
+      rekening_id: "rek-a",
+    }));
+
+    const mockSupabase = {
+      from: (table: string) => {
+        if (table === "hutang") {
+          return {
+            select: () => ({
+              eq: () => ({
+                range: async (from: number, to: number) => {
+                  return { data: mockHutangData.slice(from, to + 1), error: null };
+                },
+              }),
+            }),
+          };
+        }
+        if (table === "hutang_cicilan") {
+          return {
+            select: () => ({
+              in: (_field: string, chunk: string[]) => ({
+                range: async () => {
+                  return {
+                    data: chunk.map(() => ({ rekening_id: "rek-b" })),
+                    error: null,
+                  };
+                },
+              }),
+            }),
+          };
+        }
+        throw new Error(`Unexpected table ${table}`);
+      },
+    };
+
+    const hutangRows = await fetchAllUserHutangUsage(
+      mockSupabase as unknown as Parameters<typeof fetchAllUserHutangUsage>[0],
+      "user-123",
+    );
+    expect(hutangRows).toHaveLength(1005);
+
+    const cicilanRows = await fetchAllHutangCicilanUsage(
+      mockSupabase as unknown as Parameters<typeof fetchAllHutangCicilanUsage>[0],
+      ["h1", "h2", "h3"],
+    );
+    expect(cicilanRows).toHaveLength(3);
+    expect(cicilanRows[0].rekening_id).toBe("rek-b");
+  });
 });
