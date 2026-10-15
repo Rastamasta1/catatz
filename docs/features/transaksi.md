@@ -18,8 +18,13 @@ Fitur transaksi digunakan untuk mencatat pemasukan, pengeluaran, transfer antar 
 - Page: `src/app/(dashboard)/transactions/page.tsx`
 - Loading: `src/app/(dashboard)/transactions/loading.tsx`
 - Client page: `src/app/(dashboard)/transactions/_components/transaksi-page-client.tsx`
+- Detail Content Presentational: `src/app/(dashboard)/transactions/_components/transaksi-detail-content.tsx`
+- Detail Sheet Drawer: `src/app/(dashboard)/transactions/_components/transaksi-detail-sheet.tsx`
+- Detail Helper: `src/lib/transaksi-detail.ts`
 - Filter Bar: `src/app/(dashboard)/transactions/_components/transaksi-filter-bar.tsx`
 - Filter Sheet: `src/app/(dashboard)/transactions/_components/transaksi-filter-sheet.tsx`
+- List Container: `src/app/(dashboard)/transactions/_components/transaksi-list.tsx`
+- List Item: `src/app/(dashboard)/transactions/_components/transaksi-list-item.tsx`
 - Dialog: `src/app/(dashboard)/transactions/_components/transaksi-dialog.tsx`
 - Dialog Hook: `src/app/(dashboard)/transactions/_components/use-transaksi-dialog.ts`
 - Dialog Header: `src/app/(dashboard)/transactions/_components/transaksi-dialog-header.tsx`
@@ -53,6 +58,7 @@ Initial data diambil di Server Component dengan:
 ## Server Action Terkait
 
 - `getTransaksi`
+- `getTransaksiById`
 - `getKategori`
 - `createTransaksi`
 - `updateTransaksi`
@@ -108,6 +114,17 @@ Initial data diambil di Server Component dengan:
 - Voice Input dan Auto Fill tidak dapat berjalan bersamaan. Auto Fill bersifat online-only.
 - Saat offline, create/update/delete transaksi dapat masuk ke IndexedDB queue.
 - Pending transaksi offline ditampilkan sebagai data sementara dengan status menunggu sinkronisasi.
+- **Drawer Detail Transaksi (`TransaksiDetailSheet`) & Komponen Detail (`TransaksiDetailContent`)**:
+  - Pengguna dapat melihat detail transaksi secara cepat tanpa berpindah halaman melalui tombol ikon mata (`Detail`) pada baris transaksi atau dengan mengklik baris transaksi tersebut.
+  - Pada index daftar transaksi, transaksi bertipe Transfer dan Koreksi Saldo selalu menggunakan nama default sebagai judul (tidak di-override oleh catatan transaksi) serta menyembunyikan badge label tipe agar tampilan ringkas dan tidak redundan.
+  - Mengikuti pola responsif yang konsisten dengan Filter Transaksi: fullscreen drawer meluncur dari bawah ke atas pada mobile dengan safe-area insets, dan right-side sheet pada layar desktop.
+  - Hero card menyajikan ikon tipe bulat tetap (fixed circular type icon dengan aksen warna semantik, tidak mengikuti emoji kategori), label tipe kapital semantik, nominal besar (`font-mono`), baris tanggal dan waktu tepat di bawah nominal (`[Tanggal] - [Waktu]`), serta badge status (`_pendingSync` / `is_recurring`).
+  - Untuk transaksi transfer, alur perpindahan rekening disajikan secara vertikal dengan panah ke bawah (`ArrowDown`) yang menghubungkan Rekening Asal dan Rekening Tujuan.
+  - Untuk transaksi non-transfer, informasi Rekening, Judul (jika ada), dan Kategori (jika ada) disatukan dalam satu card metadata.
+  - Bagian Catatan dan Tag disajikan di card terpisah, sedangkan ID Referensi transaksi diletakkan rapi di posisi paling bawah.
+  - Tag sistem internal (`correction_add`, `correction_sub`) otomatis disaring dari UI dan dimanfaatkan untuk menentukan arah koreksi saldo ("Penambahan" vs "Pengurangan").
+  - Footer drawer menyajikan tombol Hapus Transaksi (dilengkapi dialog konfirmasi), Copy Transaksi (membuka modal create yang langsung di-prefill dengan data transaksi untuk duplikasi instan), dan Edit Transaksi sebagai tombol aksi utama.
+  - Untuk transaksi pending offline (`_pendingSync: true`), drawer tetap dapat dibuka untuk inspeksi data, namun tombol Edit dan Copy dinonaktifkan guna mencegah inkonsistensi data lokal.
 
 ## TODO / Improvement
 

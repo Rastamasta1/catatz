@@ -4,7 +4,7 @@ import { createClient } from '@/configs/supabase/server';
 import { revalidatePath } from 'next/cache';
 import type { ActionResult } from '@/types/general';
 import type { Transaksi, TransaksiFormValues, TransaksiFilter, Kategori, JudulSuggestion } from '@/types/transaksi';
-import { transaksiSchema } from '@/validations/transaksi-validation';
+import { transaksiSchema, transaksiIdParamSchema } from '@/validations/transaksi-validation';
 
 function validateTransaksiValues(values: TransaksiFormValues): ActionResult<TransaksiFormValues> {
   const parsed = transaksiSchema.safeParse(values);
@@ -120,6 +120,40 @@ export async function getTransaksi(filter: TransaksiFilter = {}): Promise<Transa
   const { data, error } = await query;
   if (error) throw new Error(error.message);
   return (data as Transaksi[]) ?? [];
+}
+
+export async function getTransaksiById(id: string): Promise<ActionResult<Transaksi | null>> {
+  const parsedId = transaksiIdParamSchema.safeParse(id);
+  if (!parsedId.success) {
+    return {
+      success: false,
+      error: parsedId.error.issues[0]?.message ?? 'ID transaksi tidak valid',
+    };
+  }
+
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return { success: false, error: 'Tidak terautentikasi' };
+  }
+
+  const { data, error } = await supabase
+    .from('transaksi')
+    .select(`
+      *,
+      kategori:kategori_id(*),
+      rekening:rekening_id(id, nama, jenis, logo, warna),
+      rekening_tujuan_data:rekening_tujuan(id, nama, jenis, logo, warna)
+    `)
+    .eq('id', parsedId.data)
+    .eq('user_id', user.id)
+    .maybeSingle();
+
+  if (error) {
+    return { success: false, error: error.message };
+  }
+
+  return { success: true, data: (data as Transaksi | null) ?? null };
 }
 
 export async function createTransaksi(values: TransaksiFormValues): Promise<ActionResult<Transaksi>> {
