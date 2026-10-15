@@ -4,7 +4,7 @@ import { createClient } from '@/configs/supabase/server';
 import { revalidatePath } from 'next/cache';
 import type { ActionResult } from '@/types/general';
 import type { Transaksi, TransaksiFormValues, TransaksiFilter, Kategori, JudulSuggestion } from '@/types/transaksi';
-import { transaksiSchema } from '@/validations/transaksi-validation';
+import { transaksiSchema, transaksiIdParamSchema } from '@/validations/transaksi-validation';
 
 function validateTransaksiValues(values: TransaksiFormValues): ActionResult<TransaksiFormValues> {
   const parsed = transaksiSchema.safeParse(values);
@@ -65,6 +65,18 @@ export async function getTransaksi(filter: TransaksiFilter = {}): Promise<Transa
   if (filter.tipe?.length) {
     query = query.in('tipe', filter.tipe);
   }
+  if (filter.transfer_asal_id) {
+    query = query.eq('rekening_id', filter.transfer_asal_id);
+  }
+  if (filter.transfer_tujuan_id) {
+    query = query.eq('rekening_tujuan', filter.transfer_tujuan_id);
+  }
+  if (filter.nominal_min !== undefined && filter.nominal_min !== null) {
+    query = query.gte('nominal', filter.nominal_min);
+  }
+  if (filter.nominal_max !== undefined && filter.nominal_max !== null) {
+    query = query.lte('nominal', filter.nominal_max);
+  }
   if (filter.rekening_id?.length) {
     const ids = filter.rekening_id.join(',');
     query = query.or(`rekening_id.in.(${ids}),and(tipe.eq.transfer,rekening_tujuan.in.(${ids}))`);
@@ -108,6 +120,40 @@ export async function getTransaksi(filter: TransaksiFilter = {}): Promise<Transa
   const { data, error } = await query;
   if (error) throw new Error(error.message);
   return (data as Transaksi[]) ?? [];
+}
+
+export async function getTransaksiById(id: string): Promise<ActionResult<Transaksi | null>> {
+  const parsedId = transaksiIdParamSchema.safeParse(id);
+  if (!parsedId.success) {
+    return {
+      success: false,
+      error: parsedId.error.issues[0]?.message ?? 'ID transaksi tidak valid',
+    };
+  }
+
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return { success: false, error: 'Tidak terautentikasi' };
+  }
+
+  const { data, error } = await supabase
+    .from('transaksi')
+    .select(`
+      *,
+      kategori:kategori_id(*),
+      rekening:rekening_id(id, nama, jenis, logo, warna),
+      rekening_tujuan_data:rekening_tujuan(id, nama, jenis, logo, warna)
+    `)
+    .eq('id', parsedId.data)
+    .eq('user_id', user.id)
+    .maybeSingle();
+
+  if (error) {
+    return { success: false, error: error.message };
+  }
+
+  return { success: true, data: (data as Transaksi | null) ?? null };
 }
 
 export async function createTransaksi(values: TransaksiFormValues): Promise<ActionResult<Transaksi>> {

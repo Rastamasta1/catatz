@@ -29,7 +29,7 @@
 - Jangan membuat commit Git otomatis kecuali user meminta eksplisit.
 - Gunakan `.agents/skills/` sebagai canonical skill surface dan jangan menduplikasi isi skill ke `.claude/skills/`.
 - Specialized agent hanya boleh membaca dan menganalisis. Main agent adalah satu-satunya pihak yang mengedit file.
-- Jangan mengaktifkan MCP database production. MCP project yang diizinkan saat ini hanya Chrome DevTools.
+- Jangan mengaktifkan MCP database production. MCP project yang diizinkan saat ini adalah Chrome DevTools dan CodeGraph (local code intelligence graph).
 - Memory workflow hanya boleh menyimpan metadata yang diizinkan di `docs/ecc-workflow.md`.
 
 ## Project-Specific Rules

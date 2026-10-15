@@ -44,7 +44,7 @@ CatatZ memakai subset Everything Claude Code (ECC) secara project-local untuk Co
 - Specialized agents di `.codex/agents/` dan `.claude/agents/` bersifat read-only. Main agent adalah satu-satunya pihak yang boleh mengedit file.
 - Hooks project memblokir command destruktif dan perubahan secret file, tetapi quality check hanya warning. CI tetap menjadi enforcement utama.
 - Memory hook hanya boleh menyimpan metadata di `.ecc/runtime/`: path file, status verifikasi, timestamp, dan identifier sesi yang sudah di-hash. Jangan simpan prompt, tool arguments, isi file, secret, atau data finansial.
-- MCP project hanya `chrome-devtools`. Jangan tambahkan Supabase, database production, GitHub, memory, atau connector lain tanpa review eksplisit.
+- MCP project yang diizinkan adalah `chrome-devtools` dan `codegraph` (local code intelligence graph). Jangan tambahkan Supabase, database production, GitHub, memory, atau connector lain tanpa review eksplisit.
 
 Workflow default:
 
@@ -225,3 +225,14 @@ Clarify the final response contract and require a technical Conventional Commit 
 - Jangan menjalankan command destruktif tanpa instruksi eksplisit.
 - **Untuk perubahan UI: wajib ikuti Design Contract. UI harus responsif, tidak overlap, tidak ada teks truncate di mobile, dan mengikuti DESIGN.md.**
 - Untuk perubahan transaksi/import/database, ingat bahwa write ke `transaksi` dapat berdampak pada saldo rekening.
+
+<!-- CODEGRAPH_START -->
+## CodeGraph
+
+In repositories indexed by CodeGraph (a `.codegraph/` directory exists at the repo root), reach for it BEFORE grep/find or reading files when you need to understand or locate code:
+
+- **MCP tool** (when available): `codegraph_explore` answers most code questions in one call — the relevant symbols' verbatim source plus the call paths between them, including dynamic-dispatch hops grep can't follow. Name a file or symbol in the query to read its current line-numbered source. If it's listed but deferred, load it by name via tool search.
+- **Shell** (always works): `codegraph explore "<symbol names or question>"` prints the same output.
+
+If there is no `.codegraph/` directory, skip CodeGraph entirely — indexing is the user's decision.
+<!-- CODEGRAPH_END -->

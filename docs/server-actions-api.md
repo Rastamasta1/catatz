@@ -208,6 +208,25 @@ Tabel: `transaksi`, `kategori`, `rekening`.
 
 Auth requirement: authenticated via RLS/proxy.
 
+### `getTransaksiById`
+
+Lokasi: `src/actions/transaksi-action.ts`
+
+Deskripsi: mengambil detail satu transaksi berdasarkan ID UUID untuk pengguna yang sedang terautentikasi, lengkap dengan relasi joined (`kategori`, `rekening`, `rekening_tujuan_data`).
+
+Input: `id: string`.
+
+Validasi:
+- `transaksiIdParamSchema` (Zod UUID validation) di sisi server.
+- Verifikasi user login via `supabase.auth.getUser()`.
+- Filter `eq('id', id)` dan `eq('user_id', user.id)`.
+
+Output: `ActionResult<Transaksi | null>`.
+
+Tabel: `transaksi`, `kategori`, `rekening`.
+
+Auth requirement: authenticated via RLS & Supabase session.
+
 ### `createTransaksi`
 
 Lokasi: `src/actions/transaksi-action.ts`
@@ -247,7 +266,7 @@ Output: `ActionResult<Transaksi>`.
 
 Validasi: action mengambil data lama, merge dengan payload partial, lalu memvalidasi hasilnya dengan `transaksiSchema` sebelum update.
 
-Revalidate: `/transactions`, `/wallets`, `/reports`.
+Revalidate: `/transactions`, `/transactions/${id}`, `/wallets`, `/reports`.
 
 Tabel: `transaksi`, `rekening`.
 
@@ -261,7 +280,7 @@ Input: `id: string`.
 
 Output: `ActionResult`.
 
-Revalidate: `/transactions`, `/wallets`, `/reports`.
+Revalidate: `/transactions`, `/transactions/${id}`, `/wallets`, `/reports`.
 
 Tabel: `transaksi`, `rekening`.
 
@@ -287,7 +306,7 @@ Tabel: `rekening`.
 
 ### `getRekeningUsageCountsMap`
 
-Deskripsi: menghitung pemakaian setiap rekening di transaksi, rekening tujuan transfer, hutang/piutang, cicilan, dan template transaksi berulang.
+Deskripsi: menghitung pemakaian setiap rekening di transaksi, rekening tujuan transfer, hutang/piutang, cicilan, dan template transaksi berulang. Query data riwayat (`transaksi`, `hutang`, `hutang_cicilan`) menggunakan pagination `.range()` (chunk 1.000) agar seluruh data dihitung akurat tanpa terpotong limit default PostgREST (1.000 baris) pada database produksi dengan ribuan data.
 
 Output: `Record<string, RekeningUsageCounts>`.
 
