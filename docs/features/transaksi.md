@@ -12,14 +12,23 @@ Fitur transaksi digunakan untuk mencatat pemasukan, pengeluaran, transfer antar 
 
 - `/transactions`
 - Shortcut PWA: `/transactions?new=true`
+- Detail Transaksi: `/transactions/[id]` (menggunakan UUID transaksi)
 
 ## Lokasi File
 
 - Page: `src/app/(dashboard)/transactions/page.tsx`
 - Loading: `src/app/(dashboard)/transactions/loading.tsx`
 - Client page: `src/app/(dashboard)/transactions/_components/transaksi-page-client.tsx`
+- Detail Page: `src/app/(dashboard)/transactions/[id]/page.tsx`
+- Detail Loading: `src/app/(dashboard)/transactions/[id]/loading.tsx`
+- Detail Client: `src/app/(dashboard)/transactions/[id]/_components/transaksi-detail-client.tsx`
+- Detail Content Presentational: `src/app/(dashboard)/transactions/_components/transaksi-detail-content.tsx`
+- Detail Sheet Drawer: `src/app/(dashboard)/transactions/_components/transaksi-detail-sheet.tsx`
+- Detail Helper: `src/lib/transaksi-detail.ts`
 - Filter Bar: `src/app/(dashboard)/transactions/_components/transaksi-filter-bar.tsx`
 - Filter Sheet: `src/app/(dashboard)/transactions/_components/transaksi-filter-sheet.tsx`
+- List Container: `src/app/(dashboard)/transactions/_components/transaksi-list.tsx`
+- List Item: `src/app/(dashboard)/transactions/_components/transaksi-list-item.tsx`
 - Dialog: `src/app/(dashboard)/transactions/_components/transaksi-dialog.tsx`
 - Dialog Hook: `src/app/(dashboard)/transactions/_components/use-transaksi-dialog.ts`
 - Dialog Header: `src/app/(dashboard)/transactions/_components/transaksi-dialog-header.tsx`
@@ -40,7 +49,7 @@ Fitur transaksi digunakan untuk mencatat pemasukan, pengeluaran, transfer antar 
 
 Initial data diambil di Server Component dengan:
 
-- `getTransaksi()`
+- `getTransaksi()` (atau `getTransaksiById(id)` untuk route detail)
 - `getRekening()`
 - `getKategori()`
 
@@ -53,6 +62,7 @@ Initial data diambil di Server Component dengan:
 ## Server Action Terkait
 
 - `getTransaksi`
+- `getTransaksiById`
 - `getKategori`
 - `createTransaksi`
 - `updateTransaksi`
@@ -108,6 +118,18 @@ Initial data diambil di Server Component dengan:
 - Voice Input dan Auto Fill tidak dapat berjalan bersamaan. Auto Fill bersifat online-only.
 - Saat offline, create/update/delete transaksi dapat masuk ke IndexedDB queue.
 - Pending transaksi offline ditampilkan sebagai data sementara dengan status menunggu sinkronisasi.
+- **Drawer Detail Transaksi (`TransaksiDetailSheet`)**:
+  - Pengguna dapat melihat detail transaksi secara cepat tanpa berpindah halaman melalui tombol ikon mata (`Detail`) pada baris transaksi atau dengan mengklik baris transaksi tersebut.
+  - Mengikuti pola responsif yang konsisten dengan Filter Transaksi: fullscreen drawer meluncur dari bawah ke atas pada mobile dengan safe-area insets, dan right-side sheet pada layar desktop.
+  - Menyajikan header nominal besar (`font-mono`), badge tipe, badge recurring, alur rekening (termasuk visualisasi transfer rekening asal ke tujuan), tanggal, waktu, kategori, catatan, dan daftar tag.
+  - Tag sistem internal (`correction_add`, `correction_sub`) otomatis disaring dari UI dan dimanfaatkan untuk menentukan arah koreksi saldo ("Penambahan" vs "Pengurangan").
+  - Footer drawer menyajikan tombol Buka Halaman Penuh, Edit Transaksi, dan Hapus Transaksi (dilengkapi dialog konfirmasi).
+  - Untuk transaksi pending offline (`_pendingSync: true`), drawer tetap dapat dibuka untuk inspeksi data, namun tombol Edit dan Buka Halaman Penuh dinonaktifkan/disembunyikan guna mencegah 404/konflik server.
+- **Halaman Penuh Detail Transaksi (`/transactions/[id]`)**:
+  - Halaman khusus standalone yang dapat diakses langsung melalui route URL dengan UUID transaksi.
+  - Dilengkapi validasi parameter Zod UUID server-side dan penanganan `notFound()` aman (HTTP 404 seragam untuk data tidak ada maupun data milik pengguna lain guna mencegah eksploitasi IDOR/enumerasi).
+  - Memiliki tombol navigasi kembali ke `/transactions`, tombol Salin Transaksi (mode create prefilled), Edit Transaksi, dan Hapus Transaksi.
+  - Terintegrasi dengan breadcrumb dashboard yang secara cerdas mendeteksi segmen UUID di bawah `transactions` dan melabelinya sebagai "Detail Transaksi".
 
 ## TODO / Improvement
 

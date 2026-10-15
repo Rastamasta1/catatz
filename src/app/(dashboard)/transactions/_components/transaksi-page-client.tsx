@@ -32,6 +32,7 @@ import TransaksiDialog from "./transaksi-dialog";
 import { TransaksiFilterBar } from "./transaksi-filter-bar";
 import { TransaksiList } from "./transaksi-list";
 import { TransaksiSummaryCard } from "./transaksi-summary-card";
+import { TransaksiDetailSheet } from "./transaksi-detail-sheet";
 
 type Props = {
   initialTransaksi: Transaksi[];
@@ -49,6 +50,7 @@ export default function TransaksiPageClient({
   const [editData, setEditData] = useState<Transaksi | null>(null);
   const [copyFrom, setCopyFrom] = useState<Transaksi | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [selectedDetailId, setSelectedDetailId] = useState<string | null>(null);
 
   const {
     preset,
@@ -82,6 +84,15 @@ export default function TransaksiPageClient({
     () => [...pendingCreateTransaksi, ...transaksi],
     [pendingCreateTransaksi, transaksi],
   );
+
+  const detailTransaksi = useMemo(() => {
+    if (!selectedDetailId) return null;
+    return displayTransaksi.find((t) => t.id === selectedDetailId) ?? null;
+  }, [selectedDetailId, displayTransaksi]);
+
+  function handleDetail(t: DisplayTransaksi) {
+    setSelectedDetailId(t.id);
+  }
 
   const { filter, search, setFilter, setSearch, filtered } =
     useTransaksiFilter<DisplayTransaksi>({
@@ -308,7 +319,24 @@ export default function TransaksiPageClient({
         transaksi={filtered}
         onEdit={handleEdit}
         onDelete={handleDelete}
+        onDetail={handleDetail}
         deleting={deleting}
+      />
+
+      <TransaksiDetailSheet
+        open={!!detailTransaksi}
+        onOpenChange={(open) => {
+          if (!open) setSelectedDetailId(null);
+        }}
+        transaksi={detailTransaksi}
+        onEdit={(t) => {
+          setSelectedDetailId(null);
+          handleEdit(t);
+        }}
+        onDelete={(id) => {
+          setSelectedDetailId(null);
+          handleDelete(id);
+        }}
       />
 
       <TransaksiDialog

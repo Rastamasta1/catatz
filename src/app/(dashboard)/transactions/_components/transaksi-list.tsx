@@ -9,6 +9,7 @@ export type TransaksiListProps = {
   transaksi: DisplayTransaksi[];
   onEdit: (transaksi: DisplayTransaksi) => void;
   onDelete: (id: string) => void;
+  onDetail?: (transaksi: DisplayTransaksi) => void;
   deleting: string | null;
 };
 
@@ -16,6 +17,7 @@ export function TransaksiList({
   transaksi,
   onEdit,
   onDelete,
+  onDetail,
   deleting,
 }: TransaksiListProps) {
   return (
@@ -33,6 +35,7 @@ export function TransaksiList({
             transaksi={item}
             onEdit={onEdit}
             onDelete={onDelete}
+            onDetail={onDetail}
             isDeleting={deleting === item.id}
           />
         ))

@@ -159,4 +159,48 @@ describe("TransaksiListItem Component", () => {
 
     expect(handleEdit).toHaveBeenCalledWith(mockExpenseItem);
   });
+
+  it("triggers onDetail when detail button is clicked", async () => {
+    const user = userEvent.setup();
+    const handleEdit = vi.fn();
+    const handleDelete = vi.fn();
+    const handleDetail = vi.fn();
+
+    render(
+      <TransaksiListItem
+        transaksi={mockExpenseItem}
+        onEdit={handleEdit}
+        onDelete={handleDelete}
+        onDetail={handleDetail}
+        isDeleting={false}
+      />
+    );
+
+    const detailBtn = screen.getByLabelText(/Detail transaksi ShopeeFood/i);
+    await user.click(detailBtn);
+
+    expect(handleDetail).toHaveBeenCalledWith(mockExpenseItem);
+  });
+
+  it("triggers onDetail when item row is clicked", async () => {
+    const user = userEvent.setup();
+    const handleEdit = vi.fn();
+    const handleDelete = vi.fn();
+    const handleDetail = vi.fn();
+
+    render(
+      <TransaksiListItem
+        transaksi={mockExpenseItem}
+        onEdit={handleEdit}
+        onDelete={handleDelete}
+        onDetail={handleDetail}
+        isDeleting={false}
+      />
+    );
+
+    const title = screen.getAllByText("ShopeeFood")[0];
+    await user.click(title);
+
+    expect(handleDetail).toHaveBeenCalledWith(mockExpenseItem);
+  });
 });

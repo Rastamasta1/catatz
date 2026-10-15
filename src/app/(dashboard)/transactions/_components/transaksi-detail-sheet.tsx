@@ -1,0 +1,159 @@
+"use client";
+
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { ExternalLink, Pencil, Trash2, X } from "lucide-react";
+import { toast } from "sonner";
+import type { DisplayTransaksi } from "@/hooks/use-offline-queue-sync";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { cn } from "@/lib/utils";
+import {
+  Sheet,
+  SheetClose,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/common/confirm-dialog";
+import { TransaksiDetailContent } from "./transaksi-detail-content";
+
+export type TransaksiDetailSheetProps = {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  transaksi: DisplayTransaksi | null;
+  onEdit: (transaksi: DisplayTransaksi) => void;
+  onDelete: (id: string) => void;
+};
+
+export function TransaksiDetailSheet({
+  open,
+  onOpenChange,
+  transaksi,
+  onEdit,
+  onDelete,
+}: TransaksiDetailSheetProps) {
+  const isMobile = useIsMobile();
+  const router = useRouter();
+
+  if (!transaksi) return null;
+
+  const isPendingSync = !!transaksi._pendingSync;
+
+  const handleOpenPage = () => {
+    if (isPendingSync) {
+      toast.info(
+        "Transaksi ini masih dalam antrean offline dan belum tersimpan di server.",
+      );
+      return;
+    }
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      toast.error(
+        "Membuka halaman penuh transaksi memerlukan koneksi internet.",
+      );
+      return;
+    }
+    onOpenChange(false);
+    router.push(`/transactions/${transaksi.id}`);
+  };
+
+  return (
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent
+        side={isMobile ? "bottom" : "right"}
+        showCloseButton={false}
+        className={cn(
+          "p-0 flex flex-col gap-0 bg-card text-card-foreground transition-all duration-300",
+          isMobile
+            ? "inset-0 h-dvh max-h-dvh w-full rounded-none border-none"
+            : "w-full sm:max-w-md sm:h-full border-l border-hairline shadow-lg",
+        )}
+      >
+        {/* Header dengan safe-area padding untuk notch di mobile */}
+        <SheetHeader className="pt-[max(1.25rem,env(safe-area-inset-top))] px-5 sm:px-6 pb-4 border-b border-hairline shrink-0 text-left">
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <SheetTitle className="text-lg font-semibold text-foreground">
+                Detail Transaksi
+              </SheetTitle>
+              <SheetDescription className="text-xs text-muted-foreground">
+                Informasi ringkas dan histori transaksi Anda.
+              </SheetDescription>
+            </div>
+            <SheetClose asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-9 w-9 rounded-full text-muted-foreground hover:text-foreground hover:bg-surface-strong shrink-0 cursor-pointer"
+                aria-label="Tutup detail transaksi"
+              >
+                <X className="h-5 w-5" />
+              </Button>
+            </SheetClose>
+          </div>
+        </SheetHeader>
+
+        {/* Scrollable Body */}
+        <div className="flex-1 overflow-y-auto px-5 sm:px-6 py-5 pb-32">
+          <TransaksiDetailContent transaksi={transaksi} />
+        </div>
+
+        {/* Fixed Footer dengan safe-area padding */}
+        <SheetFooter className="px-5 sm:px-6 py-4 border-t border-hairline bg-card/95 backdrop-blur-sm shrink-0 flex flex-row items-center justify-between gap-2 pb-[max(1rem,env(safe-area-inset-bottom))]">
+          {/* Tombol Hapus */}
+          <ConfirmDialog
+            title={
+              transaksi.tipe === "correction"
+                ? "Hapus Koreksi Saldo?"
+                : "Hapus Transaksi?"
+            }
+            description={
+              transaksi.tipe === "correction"
+                ? "Koreksi saldo ini akan dihapus. Saldo rekening TIDAK akan otomatis dibalik."
+                : "Transaksi ini akan dihapus secara permanen."
+            }
+            onConfirm={() => onDelete(transaksi.id)}
+          >
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-11 w-11 rounded-full bg-semantic-down/10 text-semantic-down hover:bg-semantic-down/20 shrink-0 cursor-pointer"
+              aria-label="Hapus transaksi"
+              id="btn-delete-transaksi-sheet"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </ConfirmDialog>
+
+          {/* Tombol Edit */}
+          <Button
+            type="button"
+            variant="outline"
+            disabled={isPendingSync}
+            onClick={() => onEdit(transaksi)}
+            className="rounded-full h-11 px-4 text-xs font-medium border-hairline hover:bg-surface-soft gap-2 shrink-0 cursor-pointer"
+            id="btn-edit-transaksi-sheet"
+          >
+            <Pencil className="h-3.5 w-3.5" />
+            <span>Edit</span>
+          </Button>
+
+          {/* Tombol Buka Halaman Lengkap */}
+          <Button
+            type="button"
+            onClick={handleOpenPage}
+            disabled={isPendingSync}
+            className="rounded-full h-11 px-4 bg-primary hover:bg-[#003ecc] text-white font-semibold text-xs sm:text-sm transition-colors flex-1 gap-1.5 cursor-pointer shadow-none truncate"
+            id="btn-open-full-page"
+          >
+            <ExternalLink className="h-3.5 w-3.5 shrink-0" />
+            <span className="truncate">Halaman Penuh</span>
+          </Button>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
+  );
+}

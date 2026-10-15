@@ -6,13 +6,14 @@ import { TIPE_CONFIG } from "@/constants/transaksi";
 import { ConfirmDialog } from "@/components/common/confirm-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Pencil, Trash2 } from "lucide-react";
+import { Eye, Pencil, Trash2 } from "lucide-react";
 import { useSystemPreferences } from "@/providers/system-preference-provider";
 
 export type TransaksiListItemProps = {
   transaksi: DisplayTransaksi;
   onEdit: (transaksi: DisplayTransaksi) => void;
   onDelete: (id: string) => void;
+  onDetail?: (transaksi: DisplayTransaksi) => void;
   isDeleting: boolean;
 };
 
@@ -20,6 +21,7 @@ export function TransaksiListItem({
   transaksi,
   onEdit,
   onDelete,
+  onDetail,
   isDeleting,
 }: TransaksiListItemProps) {
   const { formatRupiah, formatTanggal, formatWaktu } = useSystemPreferences();
@@ -29,7 +31,13 @@ export function TransaksiListItem({
   const waktuLabel = formatWaktu(transaksi.waktu);
 
   return (
-    <div className="group relative flex flex-col sm:flex-row sm:items-center gap-3 p-3 sm:p-4 border-b border-hairline last:border-b-0 bg-transparent hover:bg-surface-soft transition-colors">
+    <div
+      onClick={() => onDetail?.(transaksi)}
+      className={cn(
+        "group relative flex flex-col sm:flex-row sm:items-center gap-3 p-3 sm:p-4 border-b border-hairline last:border-b-0 bg-transparent hover:bg-surface-soft transition-colors text-left",
+        onDetail && "cursor-pointer",
+      )}
+    >
       {/* Mobile: Top Row (Icon, Title, Amount) */}
       <div className="flex items-center gap-3 w-full sm:w-auto">
         <div className="w-10 h-10 rounded-full bg-surface-strong flex items-center justify-center shrink-0">
@@ -194,14 +202,36 @@ export function TransaksiListItem({
             )}
         </div>
 
-        <div className="flex gap-2 ml-auto shrink-0">
+        <div
+          className="flex gap-2 ml-auto shrink-0"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {onDetail && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 rounded-full bg-surface-strong hover:bg-surface-strong/80 cursor-pointer text-muted-foreground hover:text-foreground"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDetail(transaksi);
+              }}
+              aria-label={`Detail transaksi ${displayName}`}
+              id={`btn-detail-${transaksi.id}`}
+            >
+              <Eye className="h-3.5 w-3.5" />
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="icon"
             className="h-8 w-8 rounded-full bg-surface-strong hover:bg-surface-strong/80 cursor-pointer"
             disabled={transaksi._pendingSync}
-            onClick={() => onEdit(transaksi)}
+            onClick={(e) => {
+              e.stopPropagation();
+              onEdit(transaksi);
+            }}
             aria-label={`Edit transaksi ${displayName}`}
+            id={`btn-edit-${transaksi.id}`}
           >
             <Pencil className="h-3.5 w-3.5" />
           </Button>
@@ -223,7 +253,9 @@ export function TransaksiListItem({
               size="icon"
               className="h-8 w-8 rounded-full bg-semantic-down/10 text-semantic-down hover:bg-semantic-down/20 cursor-pointer"
               disabled={isDeleting}
+              onClick={(e) => e.stopPropagation()}
               aria-label={`Hapus transaksi ${displayName}`}
+              id={`btn-delete-${transaksi.id}`}
             >
               <Trash2 className="h-3.5 w-3.5" />
             </Button>
