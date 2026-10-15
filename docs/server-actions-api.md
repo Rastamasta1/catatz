@@ -287,7 +287,7 @@ Tabel: `rekening`.
 
 ### `getRekeningUsageCountsMap`
 
-Deskripsi: menghitung pemakaian setiap rekening di transaksi, rekening tujuan transfer, hutang/piutang, cicilan, dan template transaksi berulang.
+Deskripsi: menghitung pemakaian setiap rekening di transaksi, rekening tujuan transfer, hutang/piutang, cicilan, dan template transaksi berulang. Query data riwayat (`transaksi`, `hutang`, `hutang_cicilan`) menggunakan pagination `.range()` (chunk 1.000) agar seluruh data dihitung akurat tanpa terpotong limit default PostgREST (1.000 baris) pada database produksi dengan ribuan data.
 
 Output: `Record<string, RekeningUsageCounts>`.
 
