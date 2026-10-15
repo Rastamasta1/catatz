@@ -3,6 +3,7 @@
 import type { DisplayTransaksi } from "@/hooks/use-offline-queue-sync";
 import { cn } from "@/lib/utils";
 import { TIPE_CONFIG } from "@/constants/transaksi";
+import { getTransaksiDisplayName } from "@/lib/transaksi-detail";
 import { ConfirmDialog } from "@/components/common/confirm-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -27,8 +28,15 @@ export function TransaksiListItem({
   const { formatRupiah, formatTanggal, formatWaktu } = useSystemPreferences();
   const cfg = TIPE_CONFIG[transaksi.tipe] ?? TIPE_CONFIG.expense;
   const TipeIcon = cfg.icon;
-  const displayName = transaksi.judul || transaksi.catatan || cfg.label;
+  const isTransferOrCorrection =
+    transaksi.tipe === "transfer" || transaksi.tipe === "correction";
+  const displayName = getTransaksiDisplayName(transaksi);
   const waktuLabel = formatWaktu(transaksi.waktu);
+  const categoryBadgeText = transaksi.kategori
+    ? `${transaksi.kategori.ikon ? `${transaksi.kategori.ikon} ` : ""}${transaksi.kategori.nama}`
+    : !isTransferOrCorrection
+      ? cfg.label
+      : null;
 
   return (
     <div
@@ -50,23 +58,25 @@ export function TransaksiListItem({
           <p className="font-semibold text-sm text-foreground truncate">
             {displayName}
           </p>
-          <div className="flex items-center gap-1 mt-0.5">
-            <Badge
-              className={cn(
-                "text-xs px-2.5 py-0.5 rounded-full border-0",
-                cfg.badge,
+          {(categoryBadgeText || transaksi._pendingSync) && (
+            <div className="flex items-center gap-1 mt-0.5">
+              {categoryBadgeText && (
+                <Badge
+                  className={cn(
+                    "text-xs px-2.5 py-0.5 rounded-full border-0",
+                    cfg.badge,
+                  )}
+                >
+                  {categoryBadgeText}
+                </Badge>
               )}
-            >
-              {transaksi.kategori
-                ? `${transaksi.kategori.ikon} ${transaksi.kategori.nama}`
-                : cfg.label}
-            </Badge>
-            {transaksi._pendingSync && (
-              <Badge className="border-0 bg-accent-yellow/10 px-1 py-0 text-[10px] text-accent-yellow">
-                Menunggu sinkronisasi
-              </Badge>
-            )}
-          </div>
+              {transaksi._pendingSync && (
+                <Badge className="border-0 bg-accent-yellow/10 px-1 py-0 text-[10px] text-accent-yellow">
+                  Menunggu sinkronisasi
+                </Badge>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="text-right sm:hidden">
@@ -98,16 +108,16 @@ export function TransaksiListItem({
           <span className="font-semibold text-sm text-foreground truncate">
             {displayName}
           </span>
-          <Badge
-            className={cn(
-              "text-xs px-2.5 py-0.5 rounded-full border-0",
-              cfg.badge,
-            )}
-          >
-            {transaksi.kategori
-              ? `${transaksi.kategori.ikon} ${transaksi.kategori.nama}`
-              : cfg.label}
-          </Badge>
+          {categoryBadgeText && (
+            <Badge
+              className={cn(
+                "text-xs px-2.5 py-0.5 rounded-full border-0",
+                cfg.badge,
+              )}
+            >
+              {categoryBadgeText}
+            </Badge>
+          )}
           {transaksi._pendingSync && (
             <Badge className="border-0 bg-accent-yellow/10 px-1.5 py-0 text-[10px] text-accent-yellow">
               Menunggu sinkronisasi

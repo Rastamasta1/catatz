@@ -203,4 +203,67 @@ describe("TransaksiListItem Component", () => {
 
     expect(handleDetail).toHaveBeenCalledWith(mockExpenseItem);
   });
+
+  it("keeps default title and omits type badge for transfer with catatan", () => {
+    const transferWithNote: DisplayTransaksi = {
+      ...mockTransferItem,
+      catatan: "Kirim uang saku adik",
+    };
+
+    render(
+      <TransaksiListItem
+        transaksi={transferWithNote}
+        onEdit={vi.fn()}
+        onDelete={vi.fn()}
+        isDeleting={false}
+      />
+    );
+
+    // Title remains default "Transfer", not the catatan
+    expect(screen.getAllByText("Transfer").length).toBeGreaterThan(0);
+    // Catatan is not used as title in transaction index
+    expect(screen.queryByText("Kirim uang saku adik")).not.toBeInTheDocument();
+  });
+
+  it("keeps default title and omits type badge for correction with catatan", () => {
+    const correctionWithNote: DisplayTransaksi = {
+      id: "trx-corr-1",
+      user_id: "user-1",
+      tipe: "correction",
+      nominal: 50000,
+      judul: null,
+      catatan: "Penyesuaian kas fisik",
+      tanggal: "2026-10-12",
+      waktu: "12:00",
+      kategori_id: null,
+      rekening_id: "rek-krom",
+      rekening_tujuan: null,
+      tags: ["correction_add"],
+      is_recurring: false,
+      recurring_id: null,
+      created_at: "2026-10-12T12:00:00Z",
+      updated_at: "2026-10-12T12:00:00Z",
+      rekening: {
+        id: "rek-krom",
+        nama: "Krom",
+        jenis: "Bank",
+        logo: null,
+        warna: "#6b21a8",
+      },
+    };
+
+    render(
+      <TransaksiListItem
+        transaksi={correctionWithNote}
+        onEdit={vi.fn()}
+        onDelete={vi.fn()}
+        isDeleting={false}
+      />
+    );
+
+    // Title remains default "Koreksi Saldo", not the catatan
+    expect(screen.getAllByText("Koreksi Saldo").length).toBeGreaterThan(0);
+    expect(screen.queryByText("Penyesuaian kas fisik")).not.toBeInTheDocument();
+  });
 });
+

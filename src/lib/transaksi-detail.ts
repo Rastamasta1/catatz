@@ -119,6 +119,7 @@ export function getTransaksiNominalDisplay(
 
 /**
  * Menentukan nama tampilan utama transaksi.
+ * Untuk tipe transfer dan koreksi saldo, nama tampilan selalu label default (bukan catatan).
  */
 export function getTransaksiDisplayName(
   transaksi: Pick<Transaksi, "tipe"> & {
@@ -126,6 +127,9 @@ export function getTransaksiDisplayName(
     catatan?: string | null;
   },
 ): string {
+  if (transaksi.tipe === "transfer" || transaksi.tipe === "correction") {
+    return TIPE_CONFIG[transaksi.tipe]?.label ?? "Transaksi";
+  }
   if (transaksi.judul?.trim()) return transaksi.judul.trim();
   if (transaksi.catatan?.trim()) return transaksi.catatan.trim();
   return TIPE_CONFIG[transaksi.tipe]?.label ?? "Transaksi";

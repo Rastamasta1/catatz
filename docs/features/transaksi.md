@@ -118,10 +118,14 @@ Initial data diambil di Server Component dengan:
 - Voice Input dan Auto Fill tidak dapat berjalan bersamaan. Auto Fill bersifat online-only.
 - Saat offline, create/update/delete transaksi dapat masuk ke IndexedDB queue.
 - Pending transaksi offline ditampilkan sebagai data sementara dengan status menunggu sinkronisasi.
-- **Drawer Detail Transaksi (`TransaksiDetailSheet`)**:
+- **Drawer Detail Transaksi (`TransaksiDetailSheet`) & Komponen Detail (`TransaksiDetailContent`)**:
   - Pengguna dapat melihat detail transaksi secara cepat tanpa berpindah halaman melalui tombol ikon mata (`Detail`) pada baris transaksi atau dengan mengklik baris transaksi tersebut.
+  - Pada index daftar transaksi, transaksi bertipe Transfer dan Koreksi Saldo selalu menggunakan nama default sebagai judul (tidak di-override oleh catatan transaksi) serta menyembunyikan badge label tipe agar tampilan ringkas dan tidak redundan.
   - Mengikuti pola responsif yang konsisten dengan Filter Transaksi: fullscreen drawer meluncur dari bawah ke atas pada mobile dengan safe-area insets, dan right-side sheet pada layar desktop.
-  - Menyajikan header nominal besar (`font-mono`), badge tipe, badge recurring, alur rekening (termasuk visualisasi transfer rekening asal ke tujuan), tanggal, waktu, kategori, catatan, dan daftar tag.
+  - Hero card menyajikan ikon tipe bulat tetap (fixed circular type icon dengan aksen warna semantik, tidak mengikuti emoji kategori), label tipe kapital semantik, nominal besar (`font-mono`), baris tanggal dan waktu tepat di bawah nominal (`[Tanggal] - [Waktu]`), serta badge status (`_pendingSync` / `is_recurring`).
+  - Untuk transaksi transfer, alur perpindahan rekening disajikan secara vertikal dengan panah ke bawah (`ArrowDown`) yang menghubungkan Rekening Asal dan Rekening Tujuan.
+  - Untuk transaksi non-transfer, informasi Rekening, Judul (jika ada), dan Kategori (jika ada) disatukan dalam satu card metadata.
+  - Bagian Catatan dan Tag disajikan di card terpisah, sedangkan ID Referensi transaksi diletakkan rapi di posisi paling bawah.
   - Tag sistem internal (`correction_add`, `correction_sub`) otomatis disaring dari UI dan dimanfaatkan untuk menentukan arah koreksi saldo ("Penambahan" vs "Pengurangan").
   - Footer drawer menyajikan tombol Buka Halaman Penuh, Edit Transaksi, dan Hapus Transaksi (dilengkapi dialog konfirmasi).
   - Untuk transaksi pending offline (`_pendingSync: true`), drawer tetap dapat dibuka untuk inspeksi data, namun tombol Edit dan Buka Halaman Penuh dinonaktifkan/disembunyikan guna mencegah 404/konflik server.

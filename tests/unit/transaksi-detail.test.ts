@@ -105,17 +105,23 @@ describe("transaksi-detail pure helpers", () => {
   });
 
   describe("getTransaksiDisplayName", () => {
-    it("returns judul if present and trimmed", () => {
+    it("returns judul if present and trimmed for income/expense", () => {
       expect(getTransaksiDisplayName({ tipe: "expense", judul: "  Beli Kopi  " })).toBe("Beli Kopi");
+      expect(getTransaksiDisplayName({ tipe: "income", judul: "Gaji Kantor" })).toBe("Gaji Kantor");
     });
 
-    it("falls back to catatan if judul is empty or null", () => {
-      expect(getTransaksiDisplayName({ tipe: "transfer", judul: null, catatan: "Transfer bulanan" })).toBe("Transfer bulanan");
+    it("falls back to catatan for income/expense if judul is empty or null", () => {
+      expect(getTransaksiDisplayName({ tipe: "expense", judul: null, catatan: "Makan siang" })).toBe("Makan siang");
+    });
+
+    it("always returns default type label for transfer and correction even when catatan exists", () => {
+      expect(getTransaksiDisplayName({ tipe: "transfer", judul: null, catatan: "Transfer bulanan" })).toBe("Transfer");
+      expect(getTransaksiDisplayName({ tipe: "correction", judul: null, catatan: "Penyesuaian kas" })).toBe("Koreksi Saldo");
     });
 
     it("falls back to tipe label if both judul and catatan are empty", () => {
-      expect(getTransaksiDisplayName({ tipe: "transfer", judul: null, catatan: null })).toBe("Transfer");
-      expect(getTransaksiDisplayName({ tipe: "correction", judul: "", catatan: "   " })).toBe("Koreksi Saldo");
+      expect(getTransaksiDisplayName({ tipe: "expense", judul: null, catatan: null })).toBe("Pengeluaran");
+      expect(getTransaksiDisplayName({ tipe: "income", judul: "", catatan: "   " })).toBe("Pemasukan");
     });
   });
 });

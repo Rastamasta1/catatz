@@ -7,14 +7,11 @@ import { TIPE_CONFIG } from "@/constants/transaksi";
 import {
   filterSystemTags,
   getTransaksiNominalDisplay,
-  getTransaksiDisplayName,
 } from "@/lib/transaksi-detail";
 import { useSystemPreferences } from "@/providers/system-preference-provider";
 import { Badge } from "@/components/ui/badge";
 import {
-  ArrowRight,
-  Calendar,
-  Clock,
+  ArrowDown,
   FileText,
   Repeat,
   Tag,
@@ -26,6 +23,36 @@ export type TransaksiDetailContentProps = {
   className?: string;
 };
 
+function getHeroIconTheme(tipe: Transaksi["tipe"]) {
+  switch (tipe) {
+    case "income":
+      return {
+        bg: "bg-semantic-up/10 dark:bg-semantic-up/20",
+        color: "text-semantic-up",
+      };
+    case "expense":
+      return {
+        bg: "bg-semantic-down/10 dark:bg-semantic-down/20",
+        color: "text-semantic-down",
+      };
+    case "transfer":
+      return {
+        bg: "bg-primary/10 dark:bg-primary/20",
+        color: "text-primary",
+      };
+    case "correction":
+      return {
+        bg: "bg-accent-yellow/15 dark:bg-accent-yellow/25",
+        color: "text-accent-yellow",
+      };
+    default:
+      return {
+        bg: "bg-surface-strong",
+        color: "text-foreground",
+      };
+  }
+}
+
 export function TransaksiDetailContent({
   transaksi,
   className,
@@ -33,29 +60,39 @@ export function TransaksiDetailContent({
   const { formatRupiah, formatTanggal, formatWaktu } = useSystemPreferences();
   const cfg = TIPE_CONFIG[transaksi.tipe] ?? TIPE_CONFIG.expense;
   const TipeIcon = cfg.icon;
-  const displayName = getTransaksiDisplayName(transaksi);
+  const iconTheme = getHeroIconTheme(transaksi.tipe);
   const nominalDisplay = getTransaksiNominalDisplay(transaksi);
   const userTags = filterSystemTags(transaksi.tags);
   const waktuLabel = formatWaktu(transaksi.waktu);
   const isPendingSync = (transaksi as DisplayTransaksi)._pendingSync;
 
   return (
-    <div className={cn("space-y-5", className)}>
+    <div className={cn("space-y-4", className)}>
       {/* 1. Hero Nominal Card */}
       <div className="rounded-[20px] p-6 bg-surface-soft dark:bg-surface-dark-elevated border border-hairline flex flex-col items-center text-center">
-        <div className="w-12 h-12 rounded-full bg-surface-strong flex items-center justify-center shrink-0 mb-3 shadow-none">
-          {transaksi.kategori?.ikon ? (
-            <span className="text-xl">{transaksi.kategori.ikon}</span>
-          ) : (
-            <TipeIcon className={cn("h-6 w-6", cfg.color)} />
+        {/* Fixed circular type icon (tidak mengikuti emoji kategori) */}
+        <div
+          className={cn(
+            "w-14 h-14 rounded-full flex items-center justify-center shrink-0 mb-3 shadow-none",
+            iconTheme.bg,
+            iconTheme.color,
           )}
+        >
+          <TipeIcon className="h-7 w-7 stroke-[2.25]" />
         </div>
 
-        <h3 className="font-semibold text-base sm:text-lg text-foreground max-w-full wrap-break-word">
-          {displayName}
-        </h3>
+        {/* Label Tipe Transaksi */}
+        <span
+          className={cn(
+            "text-xs font-semibold uppercase tracking-wider",
+            nominalDisplay.colorClass,
+          )}
+        >
+          {nominalDisplay.label}
+        </span>
 
-        <div className="mt-2">
+        {/* Nominal Amount */}
+        <div className="mt-1">
           <p
             className={cn(
               "font-mono text-3xl sm:text-4xl font-bold tracking-tight",
@@ -67,32 +104,37 @@ export function TransaksiDetailContent({
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center justify-center gap-2 mt-3">
-          <Badge
-            className={cn(
-              "text-xs px-3 py-1 rounded-full border-0 font-medium",
-              nominalDisplay.badgeClass,
+        {/* Tanggal & Waktu */}
+        <p className="text-xs sm:text-sm text-muted-foreground font-medium mt-2 flex items-center justify-center gap-1.5">
+          <span>{formatTanggal(transaksi.tanggal)}</span>
+          {waktuLabel && (
+            <>
+              <span className="opacity-60">-</span>
+              <span className="font-mono">{waktuLabel}</span>
+            </>
+          )}
+        </p>
+
+        {/* Status badges jika ada */}
+        {(isPendingSync || transaksi.is_recurring) && (
+          <div className="flex flex-wrap items-center justify-center gap-2 mt-3">
+            {isPendingSync && (
+              <Badge className="border-0 bg-accent-yellow/15 px-3 py-1 rounded-full text-xs font-medium text-accent-yellow">
+                Menunggu sinkronisasi
+              </Badge>
             )}
-          >
-            {nominalDisplay.label}
-          </Badge>
 
-          {isPendingSync && (
-            <Badge className="border-0 bg-accent-yellow/15 px-3 py-1 rounded-full text-xs font-medium text-accent-yellow">
-              Menunggu sinkronisasi
-            </Badge>
-          )}
-
-          {transaksi.is_recurring && (
-            <Badge className="border-0 bg-primary/10 px-3 py-1 rounded-full text-xs font-medium text-primary flex items-center gap-1">
-              <Repeat className="h-3 w-3" />
-              <span>Berulang</span>
-            </Badge>
-          )}
-        </div>
+            {transaksi.is_recurring && (
+              <Badge className="border-0 bg-primary/10 px-3 py-1 rounded-full text-xs font-medium text-primary flex items-center gap-1">
+                <Repeat className="h-3 w-3" />
+                <span>Berulang</span>
+              </Badge>
+            )}
+          </div>
+        )}
       </div>
 
-      {/* 2. Rekening / Transfer Flow Card */}
+      {/* 2. Rekening & Alur Transfer / Metadata */}
       {transaksi.tipe === "transfer" ? (
         <div className="rounded-[20px] p-4 border border-hairline bg-card space-y-3">
           <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
@@ -100,9 +142,9 @@ export function TransaksiDetailContent({
             Alur Transfer Rekening
           </span>
 
-          <div className="grid grid-cols-1 sm:grid-cols-[1fr,auto,1fr] items-center gap-3 pt-1">
+          <div className="flex flex-col gap-2 pt-1">
             {/* Rekening Asal */}
-            <div className="flex items-center gap-3 p-3 rounded-[14px] bg-surface-soft dark:bg-surface-dark-elevated border border-hairline/60">
+            <div className="flex items-center gap-3 p-3.5 rounded-[14px] bg-surface-soft dark:bg-surface-dark-elevated border border-hairline/60">
               <div
                 className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 text-white font-semibold text-xs"
                 style={{
@@ -126,14 +168,15 @@ export function TransaksiDetailContent({
               </div>
             </div>
 
-            {/* Arrow Divider */}
-            <div className="flex justify-center items-center py-1 sm:py-0 text-muted-foreground">
-              <ArrowRight className="h-5 w-5 hidden sm:block rotate-0" />
-              <ArrowRight className="h-5 w-5 sm:hidden rotate-90" />
+            {/* Arrow Divider ke bawah */}
+            <div className="flex justify-center items-center -my-1 text-muted-foreground">
+              <div className="w-7 h-7 rounded-full bg-surface-strong flex items-center justify-center border border-hairline/40">
+                <ArrowDown className="h-3.5 w-3.5 text-muted-foreground" />
+              </div>
             </div>
 
             {/* Rekening Tujuan */}
-            <div className="flex items-center gap-3 p-3 rounded-[14px] bg-surface-soft dark:bg-surface-dark-elevated border border-hairline/60">
+            <div className="flex items-center gap-3 p-3.5 rounded-[14px] bg-surface-soft dark:bg-surface-dark-elevated border border-hairline/60">
               <div
                 className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 text-white font-semibold text-xs"
                 style={{
@@ -161,89 +204,82 @@ export function TransaksiDetailContent({
           </div>
         </div>
       ) : (
-        <div className="rounded-[20px] p-4 border border-hairline bg-card flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3 min-w-0">
-            <div
-              className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 text-white font-semibold text-xs"
-              style={{
-                backgroundColor: transaksi.rekening?.warna || "#0052ff",
-              }}
-            >
-              {transaksi.rekening?.nama?.charAt(0).toUpperCase() ?? "R"}
+        /* Metadata Transaksi: Rekening, Judul, Kategori */
+        <div className="rounded-[20px] p-4 border border-hairline bg-card divide-y divide-hairline">
+          {/* Rekening */}
+          <div className="flex items-center justify-between py-2.5 first:pt-0 last:pb-0 gap-4">
+            <div className="flex items-center gap-2 text-muted-foreground shrink-0">
+              <Wallet className="h-4 w-4" />
+              <span className="text-xs font-medium">Rekening</span>
             </div>
-            <div className="min-w-0">
-              <span className="text-xs text-muted-foreground font-medium">
-                Rekening
-              </span>
-              <p className="text-sm font-semibold text-foreground truncate">
+            <div className="flex items-center gap-2 truncate justify-end">
+              {transaksi.rekening?.warna && (
+                <span
+                  className="w-2.5 h-2.5 rounded-full shrink-0"
+                  style={{ backgroundColor: transaksi.rekening.warna }}
+                />
+              )}
+              <span className="text-sm font-semibold text-foreground truncate">
                 {transaksi.rekening?.nama ?? "Belum ditentukan"}
-              </p>
+              </span>
+              {transaksi.rekening?.jenis && (
+                <Badge
+                  variant="secondary"
+                  className="rounded-full text-[10px] px-2 py-0 bg-surface-strong text-muted-foreground border-none shrink-0 font-normal"
+                >
+                  {transaksi.rekening.jenis}
+                </Badge>
+              )}
             </div>
           </div>
-          {transaksi.rekening?.jenis && (
-            <Badge
-              variant="secondary"
-              className="rounded-full text-xs px-2.5 py-0.5 bg-surface-strong text-muted-foreground border-none shrink-0"
-            >
-              {transaksi.rekening.jenis}
-            </Badge>
+
+          {/* Judul (jika ada) */}
+          {transaksi.judul && (
+            <div className="flex items-center justify-between py-2.5 first:pt-0 last:pb-0 gap-4">
+              <div className="flex items-center gap-2 text-muted-foreground shrink-0">
+                <FileText className="h-4 w-4" />
+                <span className="text-xs font-medium">Judul</span>
+              </div>
+              <span className="text-sm font-semibold text-foreground text-right truncate">
+                {transaksi.judul}
+              </span>
+            </div>
+          )}
+
+          {/* Kategori (jika ada) */}
+          {transaksi.kategori && (
+            <div className="flex items-center justify-between py-2.5 first:pt-0 last:pb-0 gap-4">
+              <div className="flex items-center gap-2 text-muted-foreground shrink-0">
+                <Tag className="h-4 w-4" />
+                <span className="text-xs font-medium">Kategori</span>
+              </div>
+              <span className="text-sm font-medium text-foreground text-right flex items-center gap-1.5 truncate">
+                {transaksi.kategori.ikon && (
+                  <span>{transaksi.kategori.ikon}</span>
+                )}
+                <span className="truncate">{transaksi.kategori.nama}</span>
+              </span>
+            </div>
           )}
         </div>
       )}
 
-      {/* 3. Grid Metadata Detail */}
-      <div className="rounded-[20px] p-4 border border-hairline bg-card divide-y divide-hairline">
-        {/* Tanggal & Waktu */}
-        <div className="flex items-center justify-between py-2.5 first:pt-0 last:pb-0 gap-4">
-          <div className="flex items-center gap-2 text-muted-foreground shrink-0">
-            <Calendar className="h-4 w-4" />
-            <span className="text-xs font-medium">Tanggal</span>
-          </div>
-          <span className="text-sm font-medium text-foreground text-right">
-            {formatTanggal(transaksi.tanggal)}
-          </span>
-        </div>
-
-        {waktuLabel && (
-          <div className="flex items-center justify-between py-2.5 first:pt-0 last:pb-0 gap-4">
+      {/* Judul Khusus Transfer (jika ada judul pada transfer) */}
+      {transaksi.tipe === "transfer" && transaksi.judul && (
+        <div className="rounded-[20px] p-4 border border-hairline bg-card">
+          <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-2 text-muted-foreground shrink-0">
-              <Clock className="h-4 w-4" />
-              <span className="text-xs font-medium">Waktu</span>
+              <FileText className="h-4 w-4" />
+              <span className="text-xs font-medium">Judul</span>
             </div>
-            <span className="font-mono text-sm font-medium text-foreground text-right">
-              {waktuLabel}
+            <span className="text-sm font-semibold text-foreground text-right truncate">
+              {transaksi.judul}
             </span>
           </div>
-        )}
-
-        {/* Kategori (jika ada) */}
-        {transaksi.kategori && (
-          <div className="flex items-center justify-between py-2.5 first:pt-0 last:pb-0 gap-4">
-            <div className="flex items-center gap-2 text-muted-foreground shrink-0">
-              <Tag className="h-4 w-4" />
-              <span className="text-xs font-medium">Kategori</span>
-            </div>
-            <span className="text-sm font-medium text-foreground text-right flex items-center gap-1.5 truncate">
-              {transaksi.kategori.ikon && (
-                <span>{transaksi.kategori.ikon}</span>
-              )}
-              <span className="truncate">{transaksi.kategori.nama}</span>
-            </span>
-          </div>
-        )}
-
-        {/* ID Transaksi */}
-        <div className="flex items-center justify-between py-2.5 first:pt-0 last:pb-0 gap-4">
-          <span className="text-xs font-medium text-muted-foreground shrink-0">
-            ID Referensi
-          </span>
-          <span className="font-mono text-[11px] text-muted-foreground/80 truncate max-w-50 select-all">
-            {transaksi.id}
-          </span>
         </div>
-      </div>
+      )}
 
-      {/* 4. Catatan Section */}
+      {/* 3. Catatan Section */}
       {transaksi.catatan && (
         <div className="rounded-[20px] p-4 border border-hairline bg-card space-y-2">
           <div className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
@@ -256,7 +292,7 @@ export function TransaksiDetailContent({
         </div>
       )}
 
-      {/* 5. User Tags Section */}
+      {/* 4. User Tags Section */}
       {userTags.length > 0 && (
         <div className="rounded-[20px] p-4 border border-hairline bg-card space-y-2.5">
           <div className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
@@ -276,6 +312,14 @@ export function TransaksiDetailContent({
           </div>
         </div>
       )}
+
+      {/* 5. ID Referensi di paling bawah */}
+      <div className="pt-2 pb-1 text-center">
+        <p className="font-mono text-[11px] text-muted-foreground/60 select-all tracking-wide">
+          ID: {transaksi.id}
+        </p>
+      </div>
     </div>
   );
 }
+

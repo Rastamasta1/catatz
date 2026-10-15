@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ExternalLink, Pencil, Trash2, X } from "lucide-react";
 import { toast } from "sonner";

@@ -80,11 +80,14 @@ describe("TransaksiDetailContent Component", () => {
   it("renders expense details with filtered tags, notes, category, and account", () => {
     render(<TransaksiDetailContent transaksi={mockExpense} />);
 
-    // Title and Amount
+    // Title, Amount, Date & Time, and Reference ID
     expect(screen.getByText("Makan Malam")).toBeInTheDocument();
     expect(screen.getByText(/Rp\s*50\.000/i)).toBeInTheDocument();
+    expect(screen.getByText(/15 Oktober 2026/i)).toBeInTheDocument();
+    expect(screen.getByText("19:30")).toBeInTheDocument();
+    expect(screen.getByText("ID: trx-exp-1")).toBeInTheDocument();
 
-    // Type badge
+    // Type label
     expect(screen.getByText("Pengeluaran")).toBeInTheDocument();
 
     // Account & Category
@@ -103,10 +106,11 @@ describe("TransaksiDetailContent Component", () => {
   it("renders transfer routing with source and destination accounts", () => {
     render(<TransaksiDetailContent transaksi={mockTransfer} />);
 
-    // Transfer title and notes
+    // Transfer title, amount, and notes
     expect(screen.getByText("Transfer Kas Operasional")).toBeInTheDocument();
     expect(screen.getByText("Top up e-wallet")).toBeInTheDocument();
     expect(screen.getByText("Transfer")).toBeInTheDocument();
+    expect(screen.getByText("ID: trx-trf-1")).toBeInTheDocument();
 
     // Both source and destination accounts displayed
     expect(screen.getByText("BCA Tabungan")).toBeInTheDocument();
@@ -126,3 +130,4 @@ describe("TransaksiDetailContent Component", () => {
     expect(screen.getByText("Menunggu sinkronisasi")).toBeInTheDocument();
   });
 });
+
