@@ -97,3 +97,7 @@ export const transaksiSchema = z
   );
 
 export type TransaksiSchema = z.infer<typeof transaksiSchema>;
+
+export const transaksiIdParamSchema = z.string().uuid({
+  message: "ID transaksi harus berupa UUID yang valid",
+});

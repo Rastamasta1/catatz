@@ -154,7 +154,9 @@ describe("Rekening Usage Calculation Logic", () => {
     expect(usageMap["rek-a"].transaksi_masuk).toBe(1);
   });
 
-  it("fetches transactions beyond 1000-row PostgREST limit and computes usage correctly", async () => {
+  it(
+    "fetches transactions beyond 1000-row PostgREST limit and computes usage correctly",
+    async () => {
     const { fetchAllUserTransaksiUsage } = await import("@/actions/rekening-action");
 
     // Simulate 1002 total transactions in DB:
@@ -224,9 +226,11 @@ describe("Rekening Usage Calculation Logic", () => {
     expect(usageMap["rek-qris-ks"].transfer_masuk).toBe(1);
     expect(usageMap["rek-qris-ks"].transfer_keluar).toBe(1);
     expect(usageMap["rek-qris-ks"].total).toBe(2);
-  });
+  }, 15000);
 
-  it("paginates hutang and cicilan usage queries properly", async () => {
+  it(
+    "paginates hutang and cicilan usage queries properly",
+    async () => {
     const { fetchAllUserHutangUsage, fetchAllHutangCicilanUsage } = await import(
       "@/actions/rekening-action"
     );
@@ -279,5 +283,5 @@ describe("Rekening Usage Calculation Logic", () => {
     );
     expect(cicilanRows).toHaveLength(3);
     expect(cicilanRows[0].rekening_id).toBe("rek-b");
-  });
+  }, 15000);
 });

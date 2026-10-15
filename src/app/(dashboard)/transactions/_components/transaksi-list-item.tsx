@@ -3,16 +3,18 @@
 import type { DisplayTransaksi } from "@/hooks/use-offline-queue-sync";
 import { cn } from "@/lib/utils";
 import { TIPE_CONFIG } from "@/constants/transaksi";
+import { getTransaksiDisplayName } from "@/lib/transaksi-detail";
 import { ConfirmDialog } from "@/components/common/confirm-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Pencil, Trash2 } from "lucide-react";
+import { Eye, Pencil, Trash2 } from "lucide-react";
 import { useSystemPreferences } from "@/providers/system-preference-provider";
 
 export type TransaksiListItemProps = {
   transaksi: DisplayTransaksi;
   onEdit: (transaksi: DisplayTransaksi) => void;
   onDelete: (id: string) => void;
+  onDetail?: (transaksi: DisplayTransaksi) => void;
   isDeleting: boolean;
 };
 
@@ -20,16 +22,30 @@ export function TransaksiListItem({
   transaksi,
   onEdit,
   onDelete,
+  onDetail,
   isDeleting,
 }: TransaksiListItemProps) {
   const { formatRupiah, formatTanggal, formatWaktu } = useSystemPreferences();
   const cfg = TIPE_CONFIG[transaksi.tipe] ?? TIPE_CONFIG.expense;
   const TipeIcon = cfg.icon;
-  const displayName = transaksi.judul || transaksi.catatan || cfg.label;
+  const isTransferOrCorrection =
+    transaksi.tipe === "transfer" || transaksi.tipe === "correction";
+  const displayName = getTransaksiDisplayName(transaksi);
   const waktuLabel = formatWaktu(transaksi.waktu);
+  const categoryBadgeText = transaksi.kategori
+    ? `${transaksi.kategori.ikon ? `${transaksi.kategori.ikon} ` : ""}${transaksi.kategori.nama}`
+    : !isTransferOrCorrection
+      ? cfg.label
+      : null;
 
   return (
-    <div className="group relative flex flex-col sm:flex-row sm:items-center gap-3 p-3 sm:p-4 border-b border-hairline last:border-b-0 bg-transparent hover:bg-surface-soft transition-colors">
+    <div
+      onClick={() => onDetail?.(transaksi)}
+      className={cn(
+        "group relative flex flex-col sm:flex-row sm:items-center gap-3 p-3 sm:p-4 border-b border-hairline last:border-b-0 bg-transparent hover:bg-surface-soft transition-colors text-left",
+        onDetail && "cursor-pointer",
+      )}
+    >
       {/* Mobile: Top Row (Icon, Title, Amount) */}
       <div className="flex items-center gap-3 w-full sm:w-auto">
         <div className="w-10 h-10 rounded-full bg-surface-strong flex items-center justify-center shrink-0">
@@ -42,23 +58,25 @@ export function TransaksiListItem({
           <p className="font-semibold text-sm text-foreground truncate">
             {displayName}
           </p>
-          <div className="flex items-center gap-1 mt-0.5">
-            <Badge
-              className={cn(
-                "text-xs px-2.5 py-0.5 rounded-full border-0",
-                cfg.badge,
+          {(categoryBadgeText || transaksi._pendingSync) && (
+            <div className="flex items-center gap-1 mt-0.5">
+              {categoryBadgeText && (
+                <Badge
+                  className={cn(
+                    "text-xs px-2.5 py-0.5 rounded-full border-0",
+                    cfg.badge,
+                  )}
+                >
+                  {categoryBadgeText}
+                </Badge>
               )}
-            >
-              {transaksi.kategori
-                ? `${transaksi.kategori.ikon} ${transaksi.kategori.nama}`
-                : cfg.label}
-            </Badge>
-            {transaksi._pendingSync && (
-              <Badge className="border-0 bg-accent-yellow/10 px-1 py-0 text-[10px] text-accent-yellow">
-                Menunggu sinkronisasi
-              </Badge>
-            )}
-          </div>
+              {transaksi._pendingSync && (
+                <Badge className="border-0 bg-accent-yellow/10 px-1 py-0 text-[10px] text-accent-yellow">
+                  Menunggu sinkronisasi
+                </Badge>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="text-right sm:hidden">
@@ -90,16 +108,16 @@ export function TransaksiListItem({
           <span className="font-semibold text-sm text-foreground truncate">
             {displayName}
           </span>
-          <Badge
-            className={cn(
-              "text-xs px-2.5 py-0.5 rounded-full border-0",
-              cfg.badge,
-            )}
-          >
-            {transaksi.kategori
-              ? `${transaksi.kategori.ikon} ${transaksi.kategori.nama}`
-              : cfg.label}
-          </Badge>
+          {categoryBadgeText && (
+            <Badge
+              className={cn(
+                "text-xs px-2.5 py-0.5 rounded-full border-0",
+                cfg.badge,
+              )}
+            >
+              {categoryBadgeText}
+            </Badge>
+          )}
           {transaksi._pendingSync && (
             <Badge className="border-0 bg-accent-yellow/10 px-1.5 py-0 text-[10px] text-accent-yellow">
               Menunggu sinkronisasi
@@ -194,14 +212,36 @@ export function TransaksiListItem({
             )}
         </div>
 
-        <div className="flex gap-2 ml-auto shrink-0">
+        <div
+          className="flex gap-2 ml-auto shrink-0"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {onDetail && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 rounded-full bg-surface-strong hover:bg-surface-strong/80 cursor-pointer text-muted-foreground hover:text-foreground"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDetail(transaksi);
+              }}
+              aria-label={`Detail transaksi ${displayName}`}
+              id={`btn-detail-${transaksi.id}`}
+            >
+              <Eye className="h-3.5 w-3.5" />
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="icon"
             className="h-8 w-8 rounded-full bg-surface-strong hover:bg-surface-strong/80 cursor-pointer"
             disabled={transaksi._pendingSync}
-            onClick={() => onEdit(transaksi)}
+            onClick={(e) => {
+              e.stopPropagation();
+              onEdit(transaksi);
+            }}
             aria-label={`Edit transaksi ${displayName}`}
+            id={`btn-edit-${transaksi.id}`}
           >
             <Pencil className="h-3.5 w-3.5" />
           </Button>
@@ -223,7 +263,9 @@ export function TransaksiListItem({
               size="icon"
               className="h-8 w-8 rounded-full bg-semantic-down/10 text-semantic-down hover:bg-semantic-down/20 cursor-pointer"
               disabled={isDeleting}
+              onClick={(e) => e.stopPropagation()}
               aria-label={`Hapus transaksi ${displayName}`}
+              id={`btn-delete-${transaksi.id}`}
             >
               <Trash2 className="h-3.5 w-3.5" />
             </Button>
