@@ -1,76 +1,84 @@
-## v1.1.0
+## v1.2.0
 
-The second feature release of CatatZ, focused on **improved transaction filter UX**, **more intuitive input fields**, and **security hardening** from CodeQL audit findings.
+The third release of CatatZ, introducing a **comprehensive overhaul of financial reporting (Rekap)**, **English URL routes migration with zero-downtime redirects**, **bidirectional transfer accounting and deletion protection for wallets**, **transaction dialog modularization**, and **streamlined CI testing**.
 
-This release includes 15 commits since v1.0.1, touching 26 files.
+This release includes 37 commits (29 non-merge) touching 147 files since v1.1.0.
 
 ---
 
 ### ✨ New Features
 
-#### 🔍 Multi-Select Combo Filters ([#8](https://github.com/kupzed/catatz/pull/8))
+#### 📊 Financial Reports Overhaul (Rekap Revamp) ([#11](https://github.com/kupzed/catatz/pull/11), [#12](https://github.com/kupzed/catatz/pull/12))
 
-- **Tipe**, **Rekening**, and **Kategori** filters on the transaction page now support **multi-select** using DropdownMenu + CheckboxItem
-- Added new **Kategori** multi-select filter that was previously unavailable
-- Sort filter (newest/oldest/largest/smallest) remains single-select
-- Backend `getTransaksi` server action updated to support array-based filtering via Supabase `.in()` query
-- Filter trigger height corrected from `h-11` to `h-12` per DESIGN.md specification
+- **Tabbed Rekap Shell:**
+  - **Realtime:** Real-time expense & income overview featuring an interactive category Donut Chart (Recharts) with segmented breakdown tabs (Categories & Transaction Titles).
+  - **Monthly Cycles (Siklus Bulanan):** Track finances based on custom salary/cut-off dates (1–31) with cycle status badges (Active/Past), previous cycle comparisons, and accumulated balance tracking.
+  - **Custom Periods (Periode Kustom):** Create and manage custom date ranges (events, holidays, projects) with complete CRUD management dialogs.
+- **Dedicated Period Detail Route (`/reports/detail`):**
+  - Drill down into any monthly cycle or custom period.
+  - **Asset Distribution Chart:** Interactive balance proportion chart visualizing funds across all wallets at that historical period.
+  - **Interactive Breakdown:** Segmented tabs for Category and Title breakdown with expandable accordion drill-down to view individual transactions.
+- **Historical Ledger Rollback Engine:**
+  - Implemented pure calculation engines (`rekap-period.ts`, `rekap-balance.ts`, `rekap-aggregate.ts`) capable of rolling back live balances to accurately reconstruct starting/ending balances for any past period.
+- **Rekap Settings Dialog:**
+  - Configurable cut-off day (1–31) and toggle for balance accumulation stored in user preferences.
 
-#### ✕ Clearable Input Fields ([#7](https://github.com/kupzed/catatz/pull/7))
+#### 🌐 English Dashboard Routes Migration ([#9](https://github.com/kupzed/catatz/pull/9), [#10](https://github.com/kupzed/catatz/pull/10))
 
-- New reusable `ClearableInput` component — wraps the base `Input` with an end-positioned X button to clear the value
-- Clear button added to `NominalInput` for all financial amount fields
-- Applied across all dashboard dialogs: transactions, accounts, categories, debts, search filters, installments, and profile settings
-- Date/time and auth inputs are intentionally excluded
+- Standardized all dashboard URL paths to English conventions:
+  - `/transaksi` ➔ `/transactions`
+  - `/rekening` ➔ `/wallets`
+  - `/rekap` ➔ `/reports`
+  - `/hutang` ➔ `/debts`
+  - `/kategori` ➔ `/categories`
+- **Zero-Downtime Backward Compatibility:** Added HTTP 307/308 permanent redirects in `next.config.ts` for all legacy paths, ensuring existing bookmarks and links continue working seamlessly.
+- Updated Server Action revalidations, breadcrumbs, sidebar navigation, user preferences, PWA shortcuts, and offline fallback pages.
 
----
+#### 🏦 Wallet Safety & Granular Deletion Warning ([#15](https://github.com/kupzed/catatz/pull/15), [#16](https://github.com/kupzed/catatz/pull/16))
 
-### 🐛 Bug Fixes
-
-- **fix(ui):** Fix double-click required to clear nominal and text inputs — added `onMouseDown preventDefault` to prevent blur event race condition that restored the formatted value before the clear action could execute ([9aeedd3](https://github.com/kupzed/catatz/commit/9aeedd3))
-- **fix(warning):** Fix word wrapping in voice transcript display on smaller screens ([7e04a4c](https://github.com/kupzed/catatz/commit/7e04a4c))
-
----
-
-### 🔐 Security
-
-- **fix(security):** Add `event.source` guard to service worker message handler to prevent untrusted windows from triggering `skipWaiting()` (CWE-20, CWE-940) ([e44a3ee](https://github.com/kupzed/catatz/commit/e44a3ee))
-- **fix(security):** Sanitize URL protocol for avatar `src` attribute — only allow `https:`, `blob:`, and `data:` protocols to prevent potential XSS (CWE-79, CWE-116) ([e44a3ee](https://github.com/kupzed/catatz/commit/e44a3ee))
-- **fix(security):** Move `sanitizeAvatarUrl` to module-level function so CodeQL recognises it as a sanitisation barrier; sanitize at every state entry point ([c6a3d9e](https://github.com/kupzed/catatz/commit/c6a3d9e))
-- **docs(security):** Add [SECURITY.md](./SECURITY.md) with vulnerability reporting policy and CatatZ security architecture documentation ([1cb0682](https://github.com/kupzed/catatz/commit/1cb0682))
-
----
-
-### 📝 Documentation & Maintenance
-
-- Add License (MIT) section to README ([666d9ef](https://github.com/kupzed/catatz/commit/666d9ef))
-- Fix table formatting and references in AGENTS.md ([ad874d2](https://github.com/kupzed/catatz/commit/ad874d2))
-- Update `docs/features/transaksi.md` and `docs/server-actions-api.md` to reflect filter changes
-- Add `continue-on-error` to dependency-review workflow for repos without Dependency Graph enabled
+- **Granular Financial Breakdown:** When attempting to delete a wallet, a detailed summary is displayed showing total income, expenses, incoming transfers, outgoing transfers, and related debt/credit counts to prevent accidental data loss.
 
 ---
 
-### 🧪 Tests
+### 🐛 Bug Fixes & Refactoring
 
-- Update E2E test assertion: account filter trigger `#filter-rekening` height from 44px to 48px to align with DESIGN.md `h-12` specification ([9655663](https://github.com/kupzed/catatz/commit/9655663))
+- **fix(wallets):** Account for transfer transactions bidirectionally in wallet transaction filters and usage checks, ensuring transfers appear correctly whether the account is the sender or recipient ([d4ad74d](https://github.com/kupzed/catatz/commit/d4ad74d)).
+- **refactor(transactions):** Decompose the monolithic 747-line `TransaksiDialog` into 6 maintainable subcomponents (`use-transaksi-dialog`, `transaksi-form-fields`, `transaksi-tipe-tabs`, `transaksi-dialog-header`, `transaksi-dialog-footer`, and `transaksi-ai-section`) ([ef871e9](https://github.com/kupzed/catatz/commit/ef871e9)).
+- **fix(transactions):** Automatically clear category selection when switching transaction type to _Transfer_ ([010653b](https://github.com/kupzed/catatz/commit/010653b)).
+- **fix(reports):** Resolve realtime breakdown title label bug, synchronize tab query params with browser history without unneeded re-renders, and align card proportions ([b15533a](https://github.com/kupzed/catatz/commit/b15533a), [74f918c](https://github.com/kupzed/catatz/commit/74f918c)).
 
 ---
 
-### 📊 Stats
+### 🗄️ Database Migrations
 
-| Metric               | Value             |
-| -------------------- | ----------------- |
-| Commits since v1.0.1 | 15 (10 non-merge) |
-| Files changed        | 26                |
-| Lines added          | 637               |
-| Lines removed        | 141               |
-| Pull Requests merged | #3, #6, #7, #8    |
+- **`014-fix-default-landing-page-values.sql`**: Updates column default for `default_landing_page` to `/transactions` and migrates existing user preference records to new English routes.
+- **`014-rekap-periode.sql`**: Adds `cutoff_day` and `akumulasi_saldo` columns to `user_preferences`, and creates the `rekap_periode_custom` table with full Row Level Security (RLS) policies and indexes.
+
+---
+
+### 🧪 Tests & CI Workflow
+
+- **CI Pipeline Streamlining:** Removed flaky Playwright E2E suite and optimized `.github/workflows/quality.yml` for fast, reliable CI execution.
+- **Expanded Unit Test Suite:** Vitest unit test suite expanded to **190 tests across 15 test files** (up from 98 tests in v1.1.0), covering all pure rekap calculation engines, validation schemas, and UI components.
+
+---
+
+### 📊 Release Stats
+
+| Metric               | Value                                 |
+| -------------------- | ------------------------------------- |
+| Commits since v1.1.0 | 37 (29 non-merge)                     |
+| Files changed        | 147                                   |
+| Lines added          | 11,930                                |
+| Lines removed        | 1,935                                 |
+| Pull Requests merged | #9, #10, #11, #12, #13, #14, #15, #16 |
+| Unit Tests Passing   | 190 / 190 (100%)                      |
 
 ---
 
 ### 🔗 Links
 
-- [Full Changelog](https://github.com/kupzed/catatz/compare/v1.0.1...v1.1.0)
+- [Full Changelog](https://github.com/kupzed/catatz/compare/v1.1.0...v1.2.0)
 - [README](./README.md)
-- [Security Policy](./SECURITY.md)
 - [Technical Documentation](./docs/README.md)
+- [Database Migrations](./docs/database-migrations.md)

@@ -2,18 +2,21 @@
 
 Format mengikuti Keep a Changelog sederhana.
 
-## Unreleased
+## [1.2.0] — 2026-10-15
 
 ### Added
 
 - **Perombakan Menyeluruh Rekap Keuangan (`/reports`)**:
-  - Tiga tab navigasi utama tersinkronisasi URL (`?tab=`): Realtime, Bulanan, dan Custom.
-  - Dialog pengaturan siklus rekap: tanggal cut-off dinamis (1–31) dan toggle Saldo Akumulasi tersimpan pada tabel `rekap_settings`.
-  - Halaman detail rekap periode (`/reports/detail`) tervalidasi Zod dengan metrik finansial terpadu, arus kas hutang/piutang riil (D8), rekonsiliasi saldo awal/akhir mundur (D7), dan grafik proporsi pengeluaran vs sisa saldo (D9).
+  - Tiga tab navigasi utama tersinkronisasi URL (`?tab=`): Realtime (dengan grafik Donut Chart Recharts), Bulanan, dan Custom.
+  - Dialog pengaturan siklus rekap: tanggal cut-off dinamis (1–31) dan toggle Saldo Akumulasi tersimpan pada tabel `user_preferences`.
+  - Halaman detail rekap periode (`/reports/detail`) tervalidasi Zod dengan metrik finansial terpadu, arus kas hutang/piutang riil, rekonsiliasi saldo awal/akhir mundur (*historical ledger rollback balance engine*), dan grafik proporsi saldo antar rekening (`proporsi-saldo-chart.tsx`).
   - Rincian breakdown transaksi interaktif (sub-tab Kategori & Judul) dengan drawer/accordion drill-down transaksi individual per item.
-  - Tab Periode Kustom dengan kemampuan CRUD penuh (dialog tambah/edit serta hapus via `ConfirmDialog`) dan tombol aksi melayang (FAB) pill anti-tabrakan.
-  - Suite pengujian E2E Playwright terisolasi (`tests/e2e/rekap-flow.spec.ts`) tanpa ketergantungan Supabase produksi.
-  - Inventarisasi audit komponen dan Server Actions legacy untuk menjamin backward compatibility tanpa penghapusan prematur.
+  - Tab Periode Kustom dengan kemampuan CRUD penuh (dialog tambah/edit serta hapus via `ConfirmDialog`).
+  - Pure calculation engines terisolasi: `rekap-period.ts`, `rekap-balance.ts`, dan `rekap-aggregate.ts`.
+- **Peningkatan Rekening & Keamanan Transaksi**:
+  - Breakdown granular transaksi finansial (pemasukan, pengeluaran, transfer masuk, transfer keluar, dan hutang/piutang terkait) pada dialog konfirmasi hapus rekening untuk mencegah kehilangan data secara tidak sengaja.
+- **Pengujian & CI**:
+  - Ekspansi unit test Vitest menjadi 190 tests di 15 file test yang mencakup engine rekap, validasi, dan komponen UI.
 
 ### Changed
 
@@ -25,7 +28,39 @@ Format mengikuti Keep a Changelog sederhana.
   - `/transaksi` -> `/transactions`
 - Menambahkan HTTP 307 temporary redirects di `next.config.ts` untuk backward compatibility semua URL lama ke URL baru.
 - Memperbarui revalidasi Server Actions, breadcrumb keys, user preferences, PWA shortcuts (`public/manifest.json`), dan offline fallback link (`public/offline.html`).
-- Seluruh teks UI, label menu, nama tabel database, tipe TypeScript, dan file actions tetap dipertahankan tanpa perubahan fungsional.
+- Dekomposisi komponen monolitik `TransaksiDialog` (747 baris) menjadi 6 sub-komponen modular (`use-transaksi-dialog.ts`, `transaksi-form-fields.tsx`, `transaksi-tipe-tabs.tsx`, `transaksi-dialog-header.tsx`, `transaksi-dialog-footer.tsx`, `transaksi-ai-section.tsx`).
+- Penyederhanaan workflow CI di `.github/workflows/quality.yml` dengan memfokuskan pada ESLint, Typecheck, dan Vitest unit test.
+
+### Fixed
+
+- Perhitungan transaksi transfer dua arah (*bidirectional*) pada filter transaksi rekening dan deteksi penggunaan rekening (`rekening-action.ts`).
+- Reset otomatis pilihan kategori saat berpindah ke tipe transaksi Transfer.
+- Sinkronisasi URL query params tab rekap dan perbaikan tampilan judul pada breakdown realtime.
+
+### Removed
+
+- Suite pengujian Playwright E2E dan konfigurasi terkait untuk mengeliminasi kelemahan timeout/flakiness pada runner headless CI.
+
+---
+
+## [1.1.0] — 2026-08-06
+
+### Added
+
+- Multi-select combo filter pada halaman transaksi untuk Tipe, Rekening, dan Kategori.
+- Komponen reusable `ClearableInput` dan tombol pembersih pada `NominalInput` di seluruh dialog dashboard.
+- Dokumentasi `SECURITY.md`.
+
+### Changed
+
+- Standarisasi tinggi trigger filter transaksi menjadi `h-12` sesuai `DESIGN.md`.
+
+### Fixed
+
+- Penanganan double-click pada tombol clear input nominal/teks.
+- Word wrapping pada tampilan voice transcript layar kecil.
+- Guard `event.source` pada pesan service worker (CWE-20, CWE-940).
+- Sanitasi protokol URL avatar (CWE-79, CWE-116).
 
 ---
 
