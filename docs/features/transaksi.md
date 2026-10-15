@@ -18,6 +18,8 @@ Fitur transaksi digunakan untuk mencatat pemasukan, pengeluaran, transfer antar 
 - Page: `src/app/(dashboard)/transactions/page.tsx`
 - Loading: `src/app/(dashboard)/transactions/loading.tsx`
 - Client page: `src/app/(dashboard)/transactions/_components/transaksi-page-client.tsx`
+- Filter Bar: `src/app/(dashboard)/transactions/_components/transaksi-filter-bar.tsx`
+- Filter Sheet: `src/app/(dashboard)/transactions/_components/transaksi-filter-sheet.tsx`
 - Dialog: `src/app/(dashboard)/transactions/_components/transaksi-dialog.tsx`
 - Dialog Hook: `src/app/(dashboard)/transactions/_components/use-transaksi-dialog.ts`
 - Dialog Header: `src/app/(dashboard)/transactions/_components/transaksi-dialog-header.tsx`
@@ -76,8 +78,17 @@ Initial data diambil di Server Component dengan:
 
 ## UI Behavior
 
-- User bisa filter periode, tipe (multi-select), rekening (multi-select), kategori (multi-select), search judul/catatan/kategori, dan sorting.
-- Filter tipe, rekening, dan kategori mendukung combo/multi-select: user bisa memilih beberapa opsi sekaligus. Sorting tetap single-select. Filter tampil dalam grid dua kolom pada mobile dan empat kolom mulai breakpoint `sm`.
+- Toolbar transaksi disusun dalam 1 baris terpadu baik di desktop maupun mobile dengan urutan: `[Filter]` - `[Search]` - `[Tambah Transaksi]`. Pada tampilan mobile, tombol tambah transaksi diringkas menjadi tombol ikon `+` (tanpa label teks) agar hemat ruang dan muat dalam satu baris.
+- Menu filter diakses melalui tombol `Filter` yang menampilkan badge angka jumlah filter aktif. Mengklik tombol ini membuka panel Filter: pada mobile layar penuh muncul dari bawah ke atas (fullscreen slide-up drawer dengan safe-area padding), sedangkan pada desktop meluncur dari sisi kanan (side sheet).
+- Formulir filter di dalam panel mencakup:
+  - Tipe Transaksi menggunakan segmented control (Semua, Pengeluaran, Pemasukan, Transfer) dengan tata letak grid 2x2 yang lapang di drawer desktop maupun mobile untuk mencegah teks saling bertumpuk.
+  - Filter Transfer khusus: hanya muncul ketika tipe transaksi Transfer dipilih, menyediakan pilihan Sumber Dana (Rekening Asal) dan Tujuan Transfer (Rekening Tujuan).
+  - Filter Rekening dan Kategori: tersedia saat tipe bukan Transfer untuk mempersempit hasil transaksi.
+  - Rentang Nominal: menyediakan input nominal minimum dan maksimum dalam rupiah (Rp Min - Rp Max) dengan format mata uang otomatis.
+  - Urutkan: dropdown pilihan pengurutan transaksi (Terbaru, Terlama, Terbesar, Terkecil).
+- Badge Filter Aktif: setiap filter yang dipilih ditampilkan di bawah baris pencarian sebagai badge pill yang dapat ditutup satu per satu tanpa harus membuka panel filter.
+- Tombol "Hapus Semua" tersedia di samping badge aktif untuk menghapus seluruh filter aktif sekaligus.
+- Pada daftar transaksi di mobile, metadata tanggal dan waktu dijaga tetap utuh (`whitespace-nowrap`). Khusus transaksi bertipe Transfer, alur perpindahan dana (`Rekening Asal → Rekening Tujuan`) ditampilkan pada baris terpisah di bawah baris waktu dengan `truncate` otomatis. Hal ini mencegah teks nama rekening dan simbol panah/titik pecah menjadi kolom-kolom bertumpuk yang berantakan pada layar ponsel yang sempit.
 - Query `?new=true` membuka dialog transaksi baru otomatis.
 - Dialog mendukung mode create, edit, copy, dan correction readonly behavior.
 - Dialog mobile dipusatkan di area aman dan memisahkan frame tetap dari scroll container form. Struktur ini menjaga tombol aksi tetap normal setelah momentum scroll cepat di iOS/PWA.

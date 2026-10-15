@@ -65,6 +65,18 @@ export async function getTransaksi(filter: TransaksiFilter = {}): Promise<Transa
   if (filter.tipe?.length) {
     query = query.in('tipe', filter.tipe);
   }
+  if (filter.transfer_asal_id) {
+    query = query.eq('rekening_id', filter.transfer_asal_id);
+  }
+  if (filter.transfer_tujuan_id) {
+    query = query.eq('rekening_tujuan', filter.transfer_tujuan_id);
+  }
+  if (filter.nominal_min !== undefined && filter.nominal_min !== null) {
+    query = query.gte('nominal', filter.nominal_min);
+  }
+  if (filter.nominal_max !== undefined && filter.nominal_max !== null) {
+    query = query.lte('nominal', filter.nominal_max);
+  }
   if (filter.rekening_id?.length) {
     const ids = filter.rekening_id.join(',');
     query = query.or(`rekening_id.in.(${ids}),and(tipe.eq.transfer,rekening_tujuan.in.(${ids}))`);

@@ -17,7 +17,7 @@ export function UpdatePrompt() {
       role="status"
       aria-live="polite"
       data-slot="pwa-update-prompt"
-      className="fixed inset-x-0 top-0 z-[60] animate-in border-b border-hairline bg-background/95 pt-[env(safe-area-inset-top)] backdrop-blur slide-in-from-top-3 duration-300"
+      className="fixed inset-x-0 top-0 z-60 animate-in border-b border-hairline bg-background/95 pt-[env(safe-area-inset-top)] backdrop-blur slide-in-from-top-3 duration-300"
     >
       <div className="mx-auto flex max-w-3xl items-center gap-2 py-2 pl-[calc(0.75rem+env(safe-area-inset-left))] pr-[calc(0.75rem+env(safe-area-inset-right))]">
         <span className="min-w-0 flex-1 truncate text-xs font-medium text-foreground sm:text-sm">

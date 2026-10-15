@@ -107,21 +107,21 @@ export function TransaksiListItem({
           )}
         </div>
         <div className="flex items-center gap-2 mt-1">
-          <span className="text-xs text-muted-foreground shrink-0">
+          <span className="text-xs text-muted-foreground shrink-0 whitespace-nowrap">
             {formatTanggal(transaksi.tanggal)}
           </span>
           {waktuLabel && (
-            <span className="text-xs text-muted-foreground shrink-0">
+            <span className="text-xs text-muted-foreground shrink-0 whitespace-nowrap">
               {"\u00B7"} {waktuLabel}
             </span>
           )}
           {transaksi.rekening && (
-            <span className="text-xs text-muted-foreground truncate max-w-30">
+            <span className="text-xs text-muted-foreground truncate max-w-35">
               {"\u00B7"} {transaksi.rekening.nama}
             </span>
           )}
           {transaksi.tipe === "transfer" && transaksi.rekening_tujuan_data && (
-            <span className="text-xs text-muted-foreground truncate max-w-30">
+            <span className="text-xs text-muted-foreground truncate max-w-35">
               {"\u2192"} {transaksi.rekening_tujuan_data.nama}
             </span>
           )}
@@ -153,29 +153,52 @@ export function TransaksiListItem({
 
       {/* Mobile Bottom Row (Meta & Actions) */}
       <div className="flex items-center justify-between mt-1 pt-2 border-t border-dashed sm:border-0 sm:mt-0 sm:pt-0 w-full sm:w-auto">
-        <div className="flex flex-col sm:hidden">
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <span>{formatTanggal(transaksi.tanggal)}</span>
-            {waktuLabel && <span>{"\u00B7"} {waktuLabel}</span>}
-            {transaksi.rekening && (
-              <span>
+        <div className="flex flex-col gap-0.5 sm:hidden min-w-0 flex-1 pr-2">
+          {/* Baris 1: Tanggal & Waktu (serta Rekening jika bukan transfer) */}
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground min-w-0">
+            <span className="shrink-0 whitespace-nowrap">
+              {formatTanggal(transaksi.tanggal)}
+            </span>
+            {waktuLabel && (
+              <span className="shrink-0 whitespace-nowrap">
+                {"\u00B7"} {waktuLabel}
+              </span>
+            )}
+            {transaksi.tipe !== "transfer" && transaksi.rekening && (
+              <span className="truncate min-w-0">
                 {"\u00B7"} {transaksi.rekening.nama}
               </span>
             )}
-            {transaksi.tipe === "transfer" &&
-              transaksi.rekening_tujuan_data && (
-                <div className="text-xs text-muted-foreground mt-0.5">
-                  {"\u2192"} {transaksi.rekening_tujuan_data.nama}
-                </div>
-              )}
           </div>
+
+          {/* Baris 2: Khusus Transfer, tampilkan alur rekening asal -> rekening tujuan pada baris tersendiri agar rapi */}
+          {transaksi.tipe === "transfer" &&
+            (transaksi.rekening || transaksi.rekening_tujuan_data) && (
+              <div className="flex items-center gap-1.5 text-xs text-foreground/80 font-medium min-w-0 mt-0.5">
+                {transaksi.rekening && (
+                  <span className="truncate min-w-0 max-w-30">
+                    {transaksi.rekening.nama}
+                  </span>
+                )}
+                {transaksi.rekening && transaksi.rekening_tujuan_data && (
+                  <span className="text-muted-foreground shrink-0 font-normal">
+                    {"\u2192"}
+                  </span>
+                )}
+                {transaksi.rekening_tujuan_data && (
+                  <span className="truncate min-w-0 max-w-30">
+                    {transaksi.rekening_tujuan_data.nama}
+                  </span>
+                )}
+              </div>
+            )}
         </div>
 
-        <div className="flex gap-2 ml-auto">
+        <div className="flex gap-2 ml-auto shrink-0">
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8 rounded-full bg-surface-strong hover:bg-surface-strong/80"
+            className="h-8 w-8 rounded-full bg-surface-strong hover:bg-surface-strong/80 cursor-pointer"
             disabled={transaksi._pendingSync}
             onClick={() => onEdit(transaksi)}
             aria-label={`Edit transaksi ${displayName}`}
@@ -198,7 +221,7 @@ export function TransaksiListItem({
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8 rounded-full bg-semantic-down/10 text-semantic-down hover:bg-semantic-down/20"
+              className="h-8 w-8 rounded-full bg-semantic-down/10 text-semantic-down hover:bg-semantic-down/20 cursor-pointer"
               disabled={isDeleting}
               aria-label={`Hapus transaksi ${displayName}`}
             >

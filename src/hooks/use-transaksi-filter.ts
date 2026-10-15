@@ -54,6 +54,14 @@ export function useTransaksiFilter<T extends Transaksi = Transaksi>({
     const result = transaksi.filter((t) => {
       if (filter.tipe?.length && !filter.tipe.includes(t.tipe))
         return false;
+      if (filter.transfer_asal_id) {
+        if (t.tipe !== "transfer" || t.rekening_id !== filter.transfer_asal_id)
+          return false;
+      }
+      if (filter.transfer_tujuan_id) {
+        if (t.tipe !== "transfer" || t.rekening_tujuan !== filter.transfer_tujuan_id)
+          return false;
+      }
       if (filter.rekening_id?.length) {
         const matchesAsal = t.rekening_id
           ? filter.rekening_id.includes(t.rekening_id)
@@ -66,6 +74,21 @@ export function useTransaksiFilter<T extends Transaksi = Transaksi>({
       }
       if (filter.kategori_id?.length && !filter.kategori_id.includes(t.kategori_id ?? ""))
         return false;
+      const nominal = Number(t.nominal);
+      if (
+        filter.nominal_min !== undefined &&
+        filter.nominal_min !== null &&
+        filter.nominal_min > 0
+      ) {
+        if (nominal < filter.nominal_min) return false;
+      }
+      if (
+        filter.nominal_max !== undefined &&
+        filter.nominal_max !== null &&
+        filter.nominal_max > 0
+      ) {
+        if (nominal > filter.nominal_max) return false;
+      }
       if (
         normalizedSearch &&
         !t.catatan?.toLowerCase().includes(normalizedSearch) &&
