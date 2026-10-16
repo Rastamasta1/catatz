@@ -4,6 +4,7 @@ import { createClient } from '@/configs/supabase/server';
 import { revalidatePath } from 'next/cache';
 import type { ActionResult } from '@/types/general';
 import type { Transaksi, TransaksiFormValues, TransaksiFilter, Kategori, JudulSuggestion } from '@/types/transaksi';
+import { fetchAllRows } from '@/lib/supabase-fetch';
 import { transaksiSchema, transaksiIdParamSchema } from '@/validations/transaksi-validation';
 
 function validateTransaksiValues(values: TransaksiFormValues): ActionResult<TransaksiFormValues> {
@@ -117,9 +118,7 @@ export async function getTransaksi(filter: TransaksiFilter = {}): Promise<Transa
     }
   }
 
-  const { data, error } = await query;
-  if (error) throw new Error(error.message);
-  return (data as Transaksi[]) ?? [];
+  return await fetchAllRows<Transaksi>(query);
 }
 
 export async function getTransaksiById(id: string): Promise<ActionResult<Transaksi | null>> {

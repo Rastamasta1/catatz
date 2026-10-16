@@ -111,6 +111,7 @@ Export data:
 - Export PDF menampilkan summary, count transaksi, periode, top kategori, dan detail transaksi.
 - Export XLSX menampilkan sheet `Ringkasan` dan `Transaksi`.
 - Export CSV menampilkan detail transaksi dalam format comma-separated values.
+- Seluruh pengambilan dataset untuk rekap bulanan, rekap detail rentang, aggregasi tren periode, budget usage, kalkulasi saldo mundur, dan export data menggunakan utilitas `fetchAllRows` (`src/lib/supabase-fetch.ts`) untuk mengambil data secara bertahap dalam batch 1.000 baris sehingga melewati batas default PostgREST tanpa kehilangan data.
 
 ## UI Behavior
 

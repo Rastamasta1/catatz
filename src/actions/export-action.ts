@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/configs/supabase/server";
+import { fetchAllRows } from "@/lib/supabase-fetch";
 import type { ActionResult } from "@/types/general";
 import { formatTanggal, formatWaktu } from "@/lib/utils";
 import {
@@ -129,8 +130,15 @@ export async function getExportData(filter?: {
     query = query.lte("tanggal", filter.sampai);
   }
 
-  const { data: tData, error } = await query;
-  if (error) return { success: false, error: error.message };
+  let tData: ExportTransaksiRow[];
+  try {
+    tData = await fetchAllRows<ExportTransaksiRow>(query);
+  } catch (err) {
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : "Gagal mengambil data transaksi",
+    };
+  }
 
   const formatTipe = (tipe: string) => {
     switch (tipe) {
@@ -221,7 +229,15 @@ export async function getExportData(filter?: {
     katQuery = katQuery.lte("tanggal", filter.sampai);
   }
 
-  const { data: katData, error: katError } = await katQuery;
+  katQuery = katQuery.order("tanggal", { ascending: true }).order("waktu", { ascending: true });
+
+  let katData: ExportKategoriRow[] | null = null;
+  let katError: boolean = false;
+  try {
+    katData = await fetchAllRows<ExportKategoriRow>(katQuery);
+  } catch {
+    katError = true;
+  }
 
   let kategori_breakdown: ExportSummary["kategori_breakdown"] = [];
   if (!katError && katData) {

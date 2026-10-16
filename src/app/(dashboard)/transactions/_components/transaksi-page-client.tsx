@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { format } from "date-fns";
 import { toast } from "sonner";
@@ -33,6 +33,7 @@ import { TransaksiFilterBar } from "./transaksi-filter-bar";
 import { TransaksiList } from "./transaksi-list";
 import { TransaksiSummaryCard } from "./transaksi-summary-card";
 import { TransaksiDetailSheet } from "./transaksi-detail-sheet";
+import { TransaksiPagination } from "./transaksi-pagination";
 
 type Props = {
   initialTransaksi: Transaksi[];
@@ -101,6 +102,38 @@ export default function TransaksiPageClient({
       baseDate,
       dateFilter,
     });
+
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(50);
+  const listTopRef = useRef<HTMLDivElement>(null);
+
+  // Reset halaman ke 1 saat filter, search, atau periode tanggal berubah (render phase adjustment)
+  const filterKey = `${search}_${JSON.stringify(filter)}_${preset}_${baseDate.getTime()}_${dateFilter.dari}_${dateFilter.sampai}`;
+  const [prevFilterKey, setPrevFilterKey] = useState(filterKey);
+
+  if (filterKey !== prevFilterKey) {
+    setPrevFilterKey(filterKey);
+    setPage(1);
+  }
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const currentPage = Math.min(Math.max(1, page), totalPages);
+
+  const paginatedTransaksi = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filtered.slice(start, start + pageSize);
+  }, [filtered, currentPage, pageSize]);
+
+  const handlePageChange = useCallback((newPage: number) => {
+    setPage(newPage);
+    listTopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, []);
+
+  const handlePageSizeChange = useCallback((newSize: number) => {
+    setPageSize(newSize);
+    setPage(1);
+    listTopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, []);
 
   useEffect(() => {
     const rekParam = searchParams.get("rekening_id");
@@ -322,13 +355,26 @@ export default function TransaksiPageClient({
         onAddClick={handleAddClick}
       />
 
+      <div ref={listTopRef} className="scroll-mt-6" />
+
       <TransaksiList
-        transaksi={filtered}
+        transaksi={paginatedTransaksi}
         onEdit={handleEdit}
         onDelete={handleDelete}
         onDetail={handleDetail}
         deleting={deleting}
       />
+
+      {filtered.length > 0 && (
+        <TransaksiPagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          pageSize={pageSize}
+          totalItems={filtered.length}
+          onPageChange={handlePageChange}
+          onPageSizeChange={handlePageSizeChange}
+        />
+      )}
 
       <TransaksiDetailSheet
         open={!!detailTransaksi}

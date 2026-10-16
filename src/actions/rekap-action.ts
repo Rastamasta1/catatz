@@ -1,6 +1,7 @@
 'use server';
 
 import { createClient } from '@/configs/supabase/server';
+import { fetchAllRows } from '@/lib/supabase-fetch';
 import type { ActionResult } from '@/types/general';
 import type { TipeHutang } from '@/types/hutang';
 import type { TipeTransaksi } from '@/types/transaksi';
@@ -401,14 +402,15 @@ function buildHutangPiutang(
 export async function getRekapBulanan(tahun: number): Promise<RekapBulanan[]> {
   const supabase = await createClient();
 
-  const { data, error } = await supabase
+  const query = supabase
     .from('transaksi')
     .select('tipe, nominal, tanggal')
     .gte('tanggal', `${tahun}-01-01`)
     .lte('tanggal', `${tahun}-12-31`)
-    .neq('tipe', 'transfer');
+    .neq('tipe', 'transfer')
+    .order('tanggal', { ascending: true });
 
-  if (error) throw new Error(error.message);
+  const data = await fetchAllRows<{ tipe: string; nominal: number; tanggal: string }>(query);
 
   const byMonth: Record<number, { income: number; expense: number }> = {};
   for (let m = 1; m <= 12; m++) {
@@ -438,15 +440,16 @@ export async function getRekapKategori(
 
   const { startDate, endDate } = getMonthRange(bulan, tahun);
 
-  const { data, error } = await supabase
+  const query = supabase
     .from('transaksi')
     .select('nominal, kategori:kategori_id(id, nama, ikon, warna)')
     .eq('tipe', 'expense')
     .gte('tanggal', startDate)
     .lte('tanggal', endDate)
-    .not('kategori_id', 'is', null);
+    .not('kategori_id', 'is', null)
+    .order('tanggal', { ascending: true });
 
-  if (error) throw new Error(error.message);
+  const data = await fetchAllRows<{ nominal: number; kategori: { id: string; nama: string; ikon: string; warna: string } | null }>(query);
 
   const grouped: Record<string, { nama: string; ikon: string; warna: string; total: number }> = {};
   let grandTotal = 0;
@@ -490,59 +493,63 @@ export async function getRekapDetailByRange(
 
   const supabase = await createClient();
 
-  const [transaksiResult, hutangResult, cicilanResult, activeHutangResult] =
+  const [transaksiRows, hutangRows, cicilanRows, activeHutangRows] =
     await Promise.all([
-      supabase
-        .from('transaksi')
-        .select(`
-          id,
-          tipe,
-          judul,
-          nominal,
-          tanggal,
-          waktu,
-          catatan,
-          tags,
-          kategori:kategori_id(id, nama, ikon, warna),
-          rekening:rekening_id(id, nama, jenis, logo, warna)
-        `)
-        .neq('tipe', 'transfer')
-        .gte('tanggal', startDate)
-        .lte('tanggal', endDate)
-        .order('tanggal', { ascending: false })
-        .order('waktu', { ascending: false }),
-      supabase
-        .from('hutang')
-        .select('id, tipe, nama_entitas, total_pinjaman, sisa_tagihan, tanggal_mulai, waktu, status, catatan')
-        .gte('tanggal_mulai', startDate)
-        .lte('tanggal_mulai', endDate)
-        .order('tanggal_mulai', { ascending: false }),
-      supabase
-        .from('hutang_cicilan')
-        .select(`
-          id,
-          nominal,
-          tanggal,
-          waktu,
-          catatan,
-          tipe_hutang_snapshot,
-          hutang:hutang_id(id, nama_entitas, tipe)
-        `)
-        .gte('tanggal', startDate)
-        .lte('tanggal', endDate)
-        .order('tanggal', { ascending: false }),
-      supabase
-        .from('hutang')
-        .select('tipe, sisa_tagihan')
-        .gt('sisa_tagihan', 0),
+      fetchAllRows<RekapTransaksiRow>(
+        supabase
+          .from('transaksi')
+          .select(`
+            id,
+            tipe,
+            judul,
+            nominal,
+            tanggal,
+            waktu,
+            catatan,
+            tags,
+            kategori:kategori_id(id, nama, ikon, warna),
+            rekening:rekening_id(id, nama, jenis, logo, warna)
+          `)
+          .neq('tipe', 'transfer')
+          .gte('tanggal', startDate)
+          .lte('tanggal', endDate)
+          .order('tanggal', { ascending: false })
+          .order('waktu', { ascending: false }),
+      ),
+      fetchAllRows<HutangRow>(
+        supabase
+          .from('hutang')
+          .select('id, tipe, nama_entitas, total_pinjaman, sisa_tagihan, tanggal_mulai, waktu, status, catatan')
+          .gte('tanggal_mulai', startDate)
+          .lte('tanggal_mulai', endDate)
+          .order('tanggal_mulai', { ascending: false }),
+      ),
+      fetchAllRows<CicilanRow>(
+        supabase
+          .from('hutang_cicilan')
+          .select(`
+            id,
+            nominal,
+            tanggal,
+            waktu,
+            catatan,
+            tipe_hutang_snapshot,
+            hutang:hutang_id(id, nama_entitas, tipe)
+          `)
+          .gte('tanggal', startDate)
+          .lte('tanggal', endDate)
+          .order('tanggal', { ascending: false }),
+      ),
+      fetchAllRows<Pick<HutangRow, 'tipe' | 'sisa_tagihan'>>(
+        supabase
+          .from('hutang')
+          .select('tipe, sisa_tagihan')
+          .gt('sisa_tagihan', 0)
+          .order('id', { ascending: true }),
+      ),
     ]);
 
-  if (transaksiResult.error) throw new Error(transaksiResult.error.message);
-  if (hutangResult.error) throw new Error(hutangResult.error.message);
-  if (cicilanResult.error) throw new Error(cicilanResult.error.message);
-  if (activeHutangResult.error) throw new Error(activeHutangResult.error.message);
-
-  const transaksiRows = (transaksiResult.data as unknown as RekapTransaksiRow[]) ?? [];
+  // transaksiRows, hutangRows, cicilanRows, activeHutangRows sudah berupa array hasil fetchAllRows
   const transaksiUtama = transaksiRows
     .filter((item) => item.tipe === 'income' || item.tipe === 'expense')
     .map(toDetailTransaksi);
@@ -567,9 +574,9 @@ export async function getRekapDetailByRange(
     judul: buildBreakdown(transaksiUtama, 'judul'),
     koreksi: buildKoreksi(transaksiRows),
     hutang_piutang: buildHutangPiutang(
-      (hutangResult.data as unknown as HutangRow[]) ?? [],
-      (cicilanResult.data as unknown as CicilanRow[]) ?? [],
-      (activeHutangResult.data as unknown as Pick<HutangRow, 'tipe' | 'sisa_tagihan'>[]) ?? [],
+      hutangRows,
+      cicilanRows,
+      activeHutangRows,
     ),
   };
 }
@@ -629,38 +636,43 @@ export async function getRekapRingkasanPeriodeList<
 
   const supabase = await createClient();
 
-  const [transaksiResult, hutangResult, cicilanResult] = await Promise.all([
-    supabase
-      .from('transaksi')
-      .select('id, tipe, nominal, tanggal, tags')
-      .gte('tanggal', minStartDate)
-      .lte('tanggal', maxEndDate),
-    supabase
-      .from('hutang')
-      .select('id, tipe, total_pinjaman, tanggal_mulai')
-      .gte('tanggal_mulai', minStartDate)
-      .lte('tanggal_mulai', maxEndDate),
-    supabase
-      .from('hutang_cicilan')
-      .select(`
-        id,
-        nominal,
-        tanggal,
-        tipe_hutang_snapshot,
-        hutang:hutang_id(tipe)
-      `)
-      .gte('tanggal', minStartDate)
-      .lte('tanggal', maxEndDate),
+  const [transaksiList, hutangList, cicilanList] = await Promise.all([
+    fetchAllRows<AggregateTransaksiItem>(
+      supabase
+        .from('transaksi')
+        .select('id, tipe, nominal, tanggal, tags')
+        .gte('tanggal', minStartDate)
+        .lte('tanggal', maxEndDate)
+        .order('tanggal', { ascending: true }),
+    ),
+    fetchAllRows<AggregateHutangItem>(
+      supabase
+        .from('hutang')
+        .select('id, tipe, total_pinjaman, tanggal_mulai')
+        .gte('tanggal_mulai', minStartDate)
+        .lte('tanggal_mulai', maxEndDate)
+        .order('tanggal_mulai', { ascending: true }),
+    ),
+    fetchAllRows<AggregateCicilanItem>(
+      supabase
+        .from('hutang_cicilan')
+        .select(`
+          id,
+          nominal,
+          tanggal,
+          tipe_hutang_snapshot,
+          hutang:hutang_id(tipe)
+        `)
+        .gte('tanggal', minStartDate)
+        .lte('tanggal', maxEndDate)
+        .order('tanggal', { ascending: true }),
+    ),
   ]);
 
-  if (transaksiResult.error) throw new Error(transaksiResult.error.message);
-  if (hutangResult.error) throw new Error(hutangResult.error.message);
-  if (cicilanResult.error) throw new Error(cicilanResult.error.message);
-
   return aggregateRekapByPeriods(normalized, {
-    transaksi: (transaksiResult.data as unknown as AggregateTransaksiItem[]) ?? [],
-    hutang: (hutangResult.data as unknown as AggregateHutangItem[]) ?? [],
-    cicilan: (cicilanResult.data as unknown as AggregateCicilanItem[]) ?? [],
+    transaksi: transaksiList,
+    hutang: hutangList,
+    cicilan: cicilanList,
   });
 }
 
@@ -678,13 +690,16 @@ export async function getBudgetWithUsage(bulan: number, tahun: number): Promise<
   if (error) throw new Error(error.message);
   if (!budgets || budgets.length === 0) return [];
 
-  const { data: transaksi } = await supabase
-    .from('transaksi')
-    .select('nominal, kategori_id')
-    .eq('tipe', 'expense')
-    .gte('tanggal', startDate)
-    .lte('tanggal', endDate)
-    .in('kategori_id', budgets.map((b) => b.kategori_id));
+  const transaksi = await fetchAllRows<{ nominal: number; kategori_id: string }>(
+    supabase
+      .from('transaksi')
+      .select('nominal, kategori_id')
+      .eq('tipe', 'expense')
+      .gte('tanggal', startDate)
+      .lte('tanggal', endDate)
+      .in('kategori_id', budgets.map((b) => b.kategori_id))
+      .order('tanggal', { ascending: true }),
+  );
 
   const usage: Record<string, number> = {};
   (transaksi as { nominal: number; kategori_id: string }[] ?? []).forEach((t) => {

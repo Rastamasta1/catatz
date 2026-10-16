@@ -10,6 +10,7 @@ import type {
   Hutang,
   HutangFormValues,
 } from '@/types/hutang';
+import { fetchAllRows } from '@/lib/supabase-fetch';
 import { hutangSchema, cicilanSchema } from '@/validations/hutang-validation';
 
 type SupabaseServerClient = Awaited<ReturnType<typeof createClient>>;
@@ -46,13 +47,12 @@ function normalizeOptionalText(value?: string | null) {
 
 export async function getHutang(): Promise<Hutang[]> {
   const supabase = await createClient();
-  const { data, error } = await supabase
+  const query = supabase
     .from('hutang')
     .select('*, cicilan:hutang_cicilan(*)')
     .order('created_at', { ascending: false });
 
-  if (error) throw new Error(error.message);
-  return (data as Hutang[]) ?? [];
+  return await fetchAllRows<Hutang>(query);
 }
 
 export async function createHutang(

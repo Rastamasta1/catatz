@@ -25,6 +25,7 @@ Fitur transaksi digunakan untuk mencatat pemasukan, pengeluaran, transfer antar 
 - Filter Sheet: `src/app/(dashboard)/transactions/_components/transaksi-filter-sheet.tsx`
 - List Container: `src/app/(dashboard)/transactions/_components/transaksi-list.tsx`
 - List Item: `src/app/(dashboard)/transactions/_components/transaksi-list-item.tsx`
+- Pagination: `src/app/(dashboard)/transactions/_components/transaksi-pagination.tsx`
 - Dialog: `src/app/(dashboard)/transactions/_components/transaksi-dialog.tsx`
 - Dialog Hook: `src/app/(dashboard)/transactions/_components/use-transaksi-dialog.ts`
 - Dialog Header: `src/app/(dashboard)/transactions/_components/transaksi-dialog-header.tsx`
@@ -124,7 +125,17 @@ Initial data diambil di Server Component dengan:
   - Bagian Catatan dan Tag disajikan di card terpisah, sedangkan ID Referensi transaksi diletakkan rapi di posisi paling bawah.
   - Tag sistem internal (`correction_add`, `correction_sub`) otomatis disaring dari UI dan dimanfaatkan untuk menentukan arah koreksi saldo ("Penambahan" vs "Pengurangan").
   - Footer drawer menyajikan tombol Hapus Transaksi (dilengkapi dialog konfirmasi), Copy Transaksi (membuka modal create yang langsung di-prefill dengan data transaksi untuk duplikasi instan), dan Edit Transaksi sebagai tombol aksi utama.
-  - Untuk transaksi pending offline (`_pendingSync: true`), drawer tetap dapat dibuka untuk inspeksi data, namun tombol Edit dan Copy dinonaktifkan guna mencegah inkonsistensi data lokal.
+- **Paginasi Transaksi (`TransaksiPagination`)**:
+  - Ditempatkan di bawah daftar transaksi dengan opsi jumlah baris: `10`, `25`, `50`, dan `100` data per halaman (default: `50`).
+  - Mengikuti kontrak desain `DESIGN.md`: tombol navigasi berwujud pill (`rounded-full`), penomoran halaman dan jumlah data menggunakan font monospace Geist Mono (`font-mono`), border tipis (`border-hairline`), dan tampilan flat tanpa shadow default.
+  - Tampilan responsif:
+    - Desktop: menampilkan dropdown baris per halaman di sisi kiri, info rentang data (misal `Menampilkan 1-50 dari 1.284 data`), dan tombol navigasi bernomor lengkap dengan smart ellipsis (`1 2 3 … 26`) serta tombol Prev/Next di sisi kanan.
+    - Mobile: disusun dalam dua baris ringkas yang tidak overflow (baris atas: info data dan dropdown baris; baris bawah: tombol Prev, indikator halaman `Hal 1 / 26`, dan tombol Next).
+  - Perpindahan halaman atau perubahan ukuran halaman otomatis melakukan *smooth scroll* kembali ke bagian atas daftar transaksi secara halus.
+  - Reset otomatis ke halaman 1 saat filter, pencarian teks, atau preset tanggal aktif berubah.
+  - Kartu ringkasan keuangan (`TransaksiSummaryCard`) dan badge total header tetap menghitung akumulasi total seluruh data yang terfilter, bukan hanya data pada halaman aktif.
+- **Dukungan Volume Data Besar (`fetchAllRows`)**:
+  - Query transaksi dan server action terkait (termasuk export data dan rekap/laporan) menggunakan utilitas paging otomatis `fetchAllRows` (`src/lib/supabase-fetch.ts`) sehingga dapat memuat data melampaui batas default 1.000 baris PostgREST secara utuh dan aman.
 
 ## TODO / Improvement
 
