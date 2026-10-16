@@ -1,6 +1,7 @@
 'use server';
 
 import { createClient } from '@/configs/supabase/server';
+import { fetchAllRows } from '@/lib/supabase-fetch';
 import type { ActionResult } from '@/types/general';
 import { addDays } from '@/lib/rekap-period';
 import {
@@ -80,39 +81,44 @@ export async function getSaldoPeriodeList<P extends RekapSaldoPeriodInput>(
     }
 
     // 2. Ambil transaksi, hutang, dan cicilan yang relevan (> cutoffDate)
-    const [txRes, hutangRes, cicilanRes] = await Promise.all([
-      supabase
-        .from('transaksi')
-        .select('id, tipe, nominal, tanggal, rekening_id, rekening_tujuan, tags')
-        .eq('user_id', user.id)
-        .gt('tanggal', cutoffDate),
-      supabase
-        .from('hutang')
-        .select('id, tipe, total_pinjaman, tanggal_mulai, rekening_id')
-        .eq('user_id', user.id)
-        .gt('tanggal_mulai', cutoffDate),
-      supabase
-        .from('hutang_cicilan')
-        .select(`
-          id,
-          nominal,
-          tanggal,
-          tipe_hutang_snapshot,
-          rekening_id,
-          hutang:hutang_id(tipe)
-        `)
-        .gt('tanggal', cutoffDate),
-    ]);
+    const txQuery = supabase
+      .from('transaksi')
+      .select('id, tipe, nominal, tanggal, rekening_id, rekening_tujuan, tags')
+      .eq('user_id', user.id)
+      .gt('tanggal', cutoffDate)
+      .order('tanggal', { ascending: true });
 
-    if (txRes.error) return { success: false, error: txRes.error.message };
-    if (hutangRes.error) return { success: false, error: hutangRes.error.message };
-    if (cicilanRes.error) return { success: false, error: cicilanRes.error.message };
+    const hutangQuery = supabase
+      .from('hutang')
+      .select('id, tipe, total_pinjaman, tanggal_mulai, rekening_id')
+      .eq('user_id', user.id)
+      .gt('tanggal_mulai', cutoffDate)
+      .order('tanggal_mulai', { ascending: true });
+
+    const cicilanQuery = supabase
+      .from('hutang_cicilan')
+      .select(`
+        id,
+        nominal,
+        tanggal,
+        tipe_hutang_snapshot,
+        rekening_id,
+        hutang:hutang_id(tipe)
+      `)
+      .gt('tanggal', cutoffDate)
+      .order('tanggal', { ascending: true });
+
+    const [transaksiList, hutangList, cicilanList] = await Promise.all([
+      fetchAllRows<LedgerTransaksiItem>(txQuery),
+      fetchAllRows<LedgerHutangItem>(hutangQuery),
+      fetchAllRows<LedgerCicilanItem>(cicilanQuery),
+    ]);
 
     const ledgerData: LedgerData = {
       rekening: (rekeningData as unknown as RekeningBalanceItem[]) ?? [],
-      transaksi: (txRes.data as unknown as LedgerTransaksiItem[]) ?? [],
-      hutang: (hutangRes.data as unknown as LedgerHutangItem[]) ?? [],
-      cicilan: (cicilanRes.data as unknown as LedgerCicilanItem[]) ?? [],
+      transaksi: transaksiList,
+      hutang: hutangList,
+      cicilan: cicilanList,
     };
 
     // Hitung saldo mundur menggunakan pure engine
